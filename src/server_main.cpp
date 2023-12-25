@@ -7,7 +7,7 @@
     #define DEFAULT_PORT 11999
 #endif // !DEFAULT_PORT
 
-int main(int argv, char** argc) {
+int main(const int argv, const char** argc) {
     if (argv != 2) {
         std::cout << "Usage: " << argc[0] << "[" << argc[0] << "]" << "\n";
         std::cout << "Hosting on a basic port: " << DEFAULT_PORT << "\n";

@@ -28,7 +28,7 @@ target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
 
 add_executable(client
     src/client_main.cpp
-# src/Client/Client.cpp
-# src/Connection/Connection.cpp
+    src/Client/Client.cpp
+    src/Connection/Connection.cpp
 )
 target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")

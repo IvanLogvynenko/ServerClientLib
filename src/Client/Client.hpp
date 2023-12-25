@@ -1,4 +1,9 @@
 #pragma once
+
+#include "debugKit/basic.hpp"
+
+#include "Connection/Connection.hpp"
+
 class Client
 {
 private:
@@ -6,4 +11,5 @@ private:
 public:
     Client();
     ~Client();
+    Connection connect();
 };
