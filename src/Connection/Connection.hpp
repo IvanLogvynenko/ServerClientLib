@@ -4,15 +4,16 @@
 #include <unistd.h>
 #include <poll.h>
 
+// TODO: Set the code for saving 'port'
 class Connection
 {
 private:
     std::string m_remote_name;
-    int m_socket_fd;
+    u_int16_t m_socket_fd;
 public:
-    Connection(int socket_fd);
-    Connection(std::string, int);
-    
+    Connection(u_int16_t);
+    Connection(int);
+    Connection(std::string, u_int16_t);
     ~Connection();
 
     operator int() const;

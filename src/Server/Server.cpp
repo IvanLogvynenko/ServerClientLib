@@ -7,16 +7,17 @@ Server::~Server() {
 }
 
 
-void Server::host(std::string port) {
+void Server::host(const std::string port) {
     this->host(stoi(port));
 }
-void Server::host(char *port) {
+void Server::host(const char *port) {
     this->host(atoi(port));
 }
-void Server::host(int port) {
+void Server::host(const int port) {
     this->host((u_int16_t)port);
 }
-void Server::host(u_int16_t port)
+
+void Server::host(const u_int16_t port)
 {
     this->m_port = port;
 
@@ -34,17 +35,25 @@ void Server::host(u_int16_t port)
     socketAddr.sin_port = htons(port);
     socketAddr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) == -1) {
+    if (bind(*this, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) == -1) {
         EL("Socket binding failed");
         throw BindException(port, (u_int16_t)socket_fd);
     }
 
     LOG("Setting socket to listening state");
-    if (listen(socket_fd, LISTEN_BACKLOG) == -1) {
+    if (listen(*this, LISTEN_BACKLOG) == -1) {
         EL("Setting socket to listening state failed");
         throw ListenException((u_int16_t)socket_fd);
     }
     ILOG("Opened and configured socket succesfully");
+}
+
+Connection Server::allowConnection()
+{
+    int new_connection_fd = accept(*this, nullptr, nullptr);
+    Connection connection = Connection(new_connection_fd);
+    this->m_connections.push_back(connection);
+    return connection;
 }
 
 u_int16_t Server::getPort() {

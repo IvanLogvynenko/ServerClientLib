@@ -1,14 +1,14 @@
 #pragma once
 #include <string>
-#include <exception>
+#include "Exceptions/Exception.hpp"
 
-class ServerException : public std::exception
+class ServerException : public Exception
 {
 protected:
     u_int16_t m_port;
     u_int16_t m_socket_fd;
 public:
     ServerException(u_int16_t, u_int16_t);
-    virtual const std::string what();
+    const std::string what();
     ~ServerException();
 };

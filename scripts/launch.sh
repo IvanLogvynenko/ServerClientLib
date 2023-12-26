@@ -1,3 +1,5 @@
 cd ../
-build/server > logs/Server.log
-build/client > logs/Client.log
+build/server > logs/Server.log &
+pid_server=$!
+build/client $1 > logs/Client.log & 
+pid_client=$!

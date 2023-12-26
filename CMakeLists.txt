@@ -18,6 +18,8 @@ add_executable(server
     src/Server/Server.cpp
     src/Connection/Connection.cpp
 
+    src/Exceptions/Exception.cpp
+
     src/Exceptions/ServerException.cpp
     src/Exceptions/BindException.cpp
     src/Exceptions/ListenException.cpp
@@ -30,5 +32,12 @@ add_executable(client
     src/client_main.cpp
     src/Client/Client.cpp
     src/Connection/Connection.cpp
+
+    src/Exceptions/Exception.cpp
+    src/Exceptions/ClientException.cpp
+    src/Exceptions/ConnectionException.cpp
+    src/Exceptions/DisconnectionException.cpp
+    src/Exceptions/SocketOpeningException.cpp
+    src/Exceptions/SocketOpeningException.cpp
 )
 target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")

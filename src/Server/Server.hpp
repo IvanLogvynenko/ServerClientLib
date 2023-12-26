@@ -26,13 +26,15 @@ public:
     Server();
     ~Server();
 
-    void host(std::string port);
-    void host(char* port);
-    void host(int port);
+    void host(const std::string port);
+    void host(const char* port);
+    void host(const int port);
+
+    Connection allowConnection();
 
     u_int16_t getPort();
 
     operator int();
 private:
-    void host(u_int16_t);
+    void host(const u_int16_t);
 };
