@@ -142,12 +142,37 @@ client/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/build
 .PHONY : client/fast
 
+src/Client/Client.o: src/Client/Client.cpp.o
+.PHONY : src/Client/Client.o
+
+# target to build an object file
+src/Client/Client.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Client/Client.cpp.o
+.PHONY : src/Client/Client.cpp.o
+
+src/Client/Client.i: src/Client/Client.cpp.i
+.PHONY : src/Client/Client.i
+
+# target to preprocess a source file
+src/Client/Client.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Client/Client.cpp.i
+.PHONY : src/Client/Client.cpp.i
+
+src/Client/Client.s: src/Client/Client.cpp.s
+.PHONY : src/Client/Client.s
+
+# target to generate assembly for a file
+src/Client/Client.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Client/Client.cpp.s
+.PHONY : src/Client/Client.cpp.s
+
 src/Connection/Connection.o: src/Connection/Connection.cpp.o
 .PHONY : src/Connection/Connection.o
 
 # target to build an object file
 src/Connection/Connection.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Connection/Connection.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Connection/Connection.cpp.o
 .PHONY : src/Connection/Connection.cpp.o
 
 src/Connection/Connection.i: src/Connection/Connection.cpp.i
@@ -156,6 +181,7 @@ src/Connection/Connection.i: src/Connection/Connection.cpp.i
 # target to preprocess a source file
 src/Connection/Connection.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Connection/Connection.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Connection/Connection.cpp.i
 .PHONY : src/Connection/Connection.cpp.i
 
 src/Connection/Connection.s: src/Connection/Connection.cpp.s
@@ -164,6 +190,7 @@ src/Connection/Connection.s: src/Connection/Connection.cpp.s
 # target to generate assembly for a file
 src/Connection/Connection.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Connection/Connection.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Connection/Connection.cpp.s
 .PHONY : src/Connection/Connection.cpp.s
 
 src/Exceptions/BindException.o: src/Exceptions/BindException.cpp.o
@@ -189,6 +216,108 @@ src/Exceptions/BindException.s: src/Exceptions/BindException.cpp.s
 src/Exceptions/BindException.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/BindException.cpp.s
 .PHONY : src/Exceptions/BindException.cpp.s
+
+src/Exceptions/ClientException.o: src/Exceptions/ClientException.cpp.o
+.PHONY : src/Exceptions/ClientException.o
+
+# target to build an object file
+src/Exceptions/ClientException.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/ClientException.cpp.o
+.PHONY : src/Exceptions/ClientException.cpp.o
+
+src/Exceptions/ClientException.i: src/Exceptions/ClientException.cpp.i
+.PHONY : src/Exceptions/ClientException.i
+
+# target to preprocess a source file
+src/Exceptions/ClientException.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/ClientException.cpp.i
+.PHONY : src/Exceptions/ClientException.cpp.i
+
+src/Exceptions/ClientException.s: src/Exceptions/ClientException.cpp.s
+.PHONY : src/Exceptions/ClientException.s
+
+# target to generate assembly for a file
+src/Exceptions/ClientException.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/ClientException.cpp.s
+.PHONY : src/Exceptions/ClientException.cpp.s
+
+src/Exceptions/ConnectionException.o: src/Exceptions/ConnectionException.cpp.o
+.PHONY : src/Exceptions/ConnectionException.o
+
+# target to build an object file
+src/Exceptions/ConnectionException.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/ConnectionException.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/ConnectionException.cpp.o
+.PHONY : src/Exceptions/ConnectionException.cpp.o
+
+src/Exceptions/ConnectionException.i: src/Exceptions/ConnectionException.cpp.i
+.PHONY : src/Exceptions/ConnectionException.i
+
+# target to preprocess a source file
+src/Exceptions/ConnectionException.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/ConnectionException.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/ConnectionException.cpp.i
+.PHONY : src/Exceptions/ConnectionException.cpp.i
+
+src/Exceptions/ConnectionException.s: src/Exceptions/ConnectionException.cpp.s
+.PHONY : src/Exceptions/ConnectionException.s
+
+# target to generate assembly for a file
+src/Exceptions/ConnectionException.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/ConnectionException.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/ConnectionException.cpp.s
+.PHONY : src/Exceptions/ConnectionException.cpp.s
+
+src/Exceptions/DisconnectionException.o: src/Exceptions/DisconnectionException.cpp.o
+.PHONY : src/Exceptions/DisconnectionException.o
+
+# target to build an object file
+src/Exceptions/DisconnectionException.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/DisconnectionException.cpp.o
+.PHONY : src/Exceptions/DisconnectionException.cpp.o
+
+src/Exceptions/DisconnectionException.i: src/Exceptions/DisconnectionException.cpp.i
+.PHONY : src/Exceptions/DisconnectionException.i
+
+# target to preprocess a source file
+src/Exceptions/DisconnectionException.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/DisconnectionException.cpp.i
+.PHONY : src/Exceptions/DisconnectionException.cpp.i
+
+src/Exceptions/DisconnectionException.s: src/Exceptions/DisconnectionException.cpp.s
+.PHONY : src/Exceptions/DisconnectionException.s
+
+# target to generate assembly for a file
+src/Exceptions/DisconnectionException.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/DisconnectionException.cpp.s
+.PHONY : src/Exceptions/DisconnectionException.cpp.s
+
+src/Exceptions/Exception.o: src/Exceptions/Exception.cpp.o
+.PHONY : src/Exceptions/Exception.o
+
+# target to build an object file
+src/Exceptions/Exception.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/Exception.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/Exception.cpp.o
+.PHONY : src/Exceptions/Exception.cpp.o
+
+src/Exceptions/Exception.i: src/Exceptions/Exception.cpp.i
+.PHONY : src/Exceptions/Exception.i
+
+# target to preprocess a source file
+src/Exceptions/Exception.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/Exception.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/Exception.cpp.i
+.PHONY : src/Exceptions/Exception.cpp.i
+
+src/Exceptions/Exception.s: src/Exceptions/Exception.cpp.s
+.PHONY : src/Exceptions/Exception.s
+
+# target to generate assembly for a file
+src/Exceptions/Exception.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/Exception.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/Exception.cpp.s
+.PHONY : src/Exceptions/Exception.cpp.s
 
 src/Exceptions/HostException.o: src/Exceptions/HostException.cpp.o
 .PHONY : src/Exceptions/HostException.o
@@ -261,6 +390,30 @@ src/Exceptions/ServerException.s: src/Exceptions/ServerException.cpp.s
 src/Exceptions/ServerException.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/Exceptions/ServerException.cpp.s
 .PHONY : src/Exceptions/ServerException.cpp.s
+
+src/Exceptions/SocketOpeningException.o: src/Exceptions/SocketOpeningException.cpp.o
+.PHONY : src/Exceptions/SocketOpeningException.o
+
+# target to build an object file
+src/Exceptions/SocketOpeningException.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/SocketOpeningException.cpp.o
+.PHONY : src/Exceptions/SocketOpeningException.cpp.o
+
+src/Exceptions/SocketOpeningException.i: src/Exceptions/SocketOpeningException.cpp.i
+.PHONY : src/Exceptions/SocketOpeningException.i
+
+# target to preprocess a source file
+src/Exceptions/SocketOpeningException.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/SocketOpeningException.cpp.i
+.PHONY : src/Exceptions/SocketOpeningException.cpp.i
+
+src/Exceptions/SocketOpeningException.s: src/Exceptions/SocketOpeningException.cpp.s
+.PHONY : src/Exceptions/SocketOpeningException.s
+
+# target to generate assembly for a file
+src/Exceptions/SocketOpeningException.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/Exceptions/SocketOpeningException.cpp.s
+.PHONY : src/Exceptions/SocketOpeningException.cpp.s
 
 src/Server/Server.o: src/Server/Server.cpp.o
 .PHONY : src/Server/Server.o
@@ -344,12 +497,27 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... client"
 	@echo "... server"
+	@echo "... src/Client/Client.o"
+	@echo "... src/Client/Client.i"
+	@echo "... src/Client/Client.s"
 	@echo "... src/Connection/Connection.o"
 	@echo "... src/Connection/Connection.i"
 	@echo "... src/Connection/Connection.s"
 	@echo "... src/Exceptions/BindException.o"
 	@echo "... src/Exceptions/BindException.i"
 	@echo "... src/Exceptions/BindException.s"
+	@echo "... src/Exceptions/ClientException.o"
+	@echo "... src/Exceptions/ClientException.i"
+	@echo "... src/Exceptions/ClientException.s"
+	@echo "... src/Exceptions/ConnectionException.o"
+	@echo "... src/Exceptions/ConnectionException.i"
+	@echo "... src/Exceptions/ConnectionException.s"
+	@echo "... src/Exceptions/DisconnectionException.o"
+	@echo "... src/Exceptions/DisconnectionException.i"
+	@echo "... src/Exceptions/DisconnectionException.s"
+	@echo "... src/Exceptions/Exception.o"
+	@echo "... src/Exceptions/Exception.i"
+	@echo "... src/Exceptions/Exception.s"
 	@echo "... src/Exceptions/HostException.o"
 	@echo "... src/Exceptions/HostException.i"
 	@echo "... src/Exceptions/HostException.s"
@@ -359,6 +527,9 @@ help:
 	@echo "... src/Exceptions/ServerException.o"
 	@echo "... src/Exceptions/ServerException.i"
 	@echo "... src/Exceptions/ServerException.s"
+	@echo "... src/Exceptions/SocketOpeningException.o"
+	@echo "... src/Exceptions/SocketOpeningException.i"
+	@echo "... src/Exceptions/SocketOpeningException.s"
 	@echo "... src/Server/Server.o"
 	@echo "... src/Server/Server.i"
 	@echo "... src/Server/Server.s"

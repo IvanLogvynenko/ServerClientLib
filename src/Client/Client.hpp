@@ -9,6 +9,9 @@
 
 #include "Connection/Connection.hpp"
 
+#include "Message/Message.hpp"
+#include "Responce/Responce.hpp"
+
 #include "Exceptions/SocketOpeningException.hpp"
 #include "Exceptions/ConnectionException.hpp"
 #include "Exceptions/DisconnectionException.hpp"
@@ -18,7 +21,6 @@ class Client
 protected:
     u_int16_t m_socket_fd;
     Connection m_connection;
-    bool m_connection_established;
 
     Connection m_connectTo(const char*, const u_int16_t);
     static u_int16_t openSocket();
@@ -30,7 +32,9 @@ public:
     Connection connectTo(const char*, const int);
 
     void disconnect();
+    bool checkIfConnected();
 
     operator int();
     operator u_int16_t();
+    Client& operator=(const Client& other);
 };

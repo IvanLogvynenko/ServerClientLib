@@ -1,9 +1,17 @@
 #include "Server.hpp"
 
-Server::Server() : m_port(-1) {}
+Server::Server() : 
+    m_connections({}),
+    m_port(-1), 
+    m_socket_fd(-1),
+    m_onConnect(nullptr) {}
 Server::~Server() {
     LOG("Closing socket");
-    close(this->m_socket_fd);
+    close(*this);
+    for (size_t i = 0; i < this->m_connections.size(); i++)
+    {
+        delete this->m_connections[i];
+    }
 }
 
 
@@ -51,7 +59,20 @@ void Server::host(const u_int16_t port)
 /// @brief use it only if you're sure that there is a connection awaiting for you to capture it, 
 /// otherwise awaitNewConnection() is a better option
 /// @return Returns an instance of Connection with socket descriptor and port recieved during connection
-Connection Server::allowConnection()
+Connection& Server::allowConnection()
+{
+    return allowConnection(nullptr);
+}
+Connection& Server::awaitNewConnection()
+{
+    //https://stackoverflow.com/questions/529975/what-does-poll-do-with-a-timeout-of-0 so it should be -1 and not 0
+    return this->awaitNewConnection(-1);
+}
+Connection& Server::awaitNewConnection(int awaitMilliseconds)
+{
+    return this->awaitNewConnection(awaitMilliseconds, nullptr);
+}
+Connection& Server::allowConnection(void (*onConnect)(Connection&))
 {
     sockaddr_in incomming;
     socklen_t length = sizeof(struct sockaddr_in);
@@ -60,21 +81,25 @@ Connection Server::allowConnection()
         EL("Failed to create a connection");
         throw ConnectionException(std::to_string(this->m_socket_fd), std::to_string(incomming.sin_port));
     }
-    Connection connection = Connection((u_int16_t)new_connection_fd, incomming.sin_port);
+    Connection* connection = new Connection((u_int16_t)new_connection_fd, incomming.sin_port);
+    if (onConnect != nullptr) {
+        (*onConnect)(*connection);
+        this->m_onConnect = onConnect;
+    }
+    else if (this->m_onConnect != nullptr)
+            (*(this->m_onConnect))(*connection);
     this->m_connections.push_back(connection);
-    return connection;
+    return *connection;
 }
-
-Connection Server::awaitNewConnection()
+Connection &Server::awaitNewConnection(void (*onConnect)(Connection &))
 {
-    //https://stackoverflow.com/questions/529975/what-does-poll-do-with-a-timeout-of-0 so it should be -1 and not 0
-    return this->awaitNewConnection(-1);
+    return this->awaitNewConnection(-1, onConnect);
 }
 
-Connection Server::awaitNewConnection(int awaitMilliseconds)
+Connection &Server::awaitNewConnection(int awaitMilliseconds, void (*onConnect)(Connection &))
 {
     if (!awaitMilliseconds)
-        return this->allowConnection();
+        return this->allowConnection(onConnect);
     LOG("Awaiting new connection");
     
     pollfd pfd = *this;
@@ -84,9 +109,16 @@ Connection Server::awaitNewConnection(int awaitMilliseconds)
     socklen_t length = sizeof(struct sockaddr_in);
     int new_connection_fd = accept(*this, (struct sockaddr *)&incomming, &length);
     LOG("Got new connection");
-    Connection connection = Connection((u_int16_t)new_connection_fd, incomming.sin_port);
+    Connection* connection = new Connection((u_int16_t)new_connection_fd, incomming.sin_port);
+    if (onConnect != nullptr) {
+        (*onConnect)(*connection);
+        this->m_onConnect = onConnect;
+    }
+    else {
+        (*(this->m_onConnect))(*connection);
+    }
     this->m_connections.push_back(connection);
-    return connection;
+    return *connection;
 }
 
 u_int16_t Server::getPort() {
@@ -105,12 +137,19 @@ Server::operator pollfd()
 {
     return pollfd{*this, POLLIN, 0};
 }
-
 Server::operator std::vector<pollfd>()
 {
     std::vector<pollfd> result = {};
     result.push_back(*this);
     for (size_t i = 0; i < this->m_connections.size(); i++)
-        result.push_back(this->m_connections[i]);   
+        result.push_back(*(this->m_connections[i]));   
     return result; 
+}
+Server &Server::operator=(const Server &other) {
+    if (this != &other) {
+        this->m_connections = other.m_connections;
+        this->m_port = other.m_port;
+        this->m_socket_fd = other.m_socket_fd;
+    }
+    return *this;
 }

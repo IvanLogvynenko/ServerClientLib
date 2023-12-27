@@ -21,9 +21,10 @@
 class Server
 {
 protected:
-    std::vector<Connection> m_connections;
+    std::vector<Connection*> m_connections;
     u_int16_t m_port;
     int m_socket_fd;
+    void(*m_onConnect)(Connection&);
 public:
     Server();
     ~Server();
@@ -32,17 +33,22 @@ public:
     void host(const char* port);
     void host(const int port);
 
-    Connection allowConnection();
-    Connection awaitNewConnection();
-    Connection awaitNewConnection(int);
+    Connection& allowConnection();
+    Connection& awaitNewConnection();
+    Connection& awaitNewConnection(int);
+
+    Connection& allowConnection(void(*)(Connection&));
+    Connection& awaitNewConnection(void(*)(Connection&));
+    Connection& awaitNewConnection(int, void(*)(Connection&));
 
     u_int16_t getPort();
 
     operator int();
     operator u_int16_t();
-
     operator pollfd();
     operator std::vector<pollfd>();
+
+    Server& operator=(const Server& other);
 
 private:
     void host(const u_int16_t);

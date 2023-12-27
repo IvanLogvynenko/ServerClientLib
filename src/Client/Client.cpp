@@ -2,11 +2,10 @@
 
 Client::Client() : 
     m_socket_fd(openSocket()), 
-    m_connection(Connection("", -1, -1)),
-    m_connection_established(false) {
+    m_connection(Connection(-1, -1))
+    {
         LOG("Created client");
 }
-
 Client::~Client() {
     ILOG("Closing socket");
     close(*this);
@@ -33,7 +32,6 @@ Connection Client::m_connectTo(const char* host, const u_int16_t port) {
         throw ConnectionException(host, std::to_string(port).c_str());
     }
     LOG("Connected successfully");
-    this->m_connection_established = true;
     return Connection(*this, port);
 }
 
@@ -53,15 +51,24 @@ void Client::disconnect() {
     LOG("Closed socket");
     close(this->m_socket_fd);
     this->m_socket_fd = openSocket();
-    this->m_connection = Connection("", -1, -1);
-    this->m_connection_established = false;
+    this->m_connection = Connection(-1, -1);
+}
+bool Client::checkIfConnected() {
+    return this->m_connection.checkValidity();
 }
 
 Client::operator int() {
     return this->m_socket_fd;
 }
-
 Client::operator u_int16_t()
 {
     return this->m_socket_fd;
+}
+Client &Client::operator=(const Client &other)
+{
+    if (this != &other) {
+        this->m_connection = other.m_connection;
+        this->m_socket_fd = other.m_socket_fd;
+    }
+    return *this;
 }

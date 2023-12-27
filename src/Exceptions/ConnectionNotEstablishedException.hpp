@@ -6,4 +6,6 @@ class ConnectionNotEstablishedException : public ClientException
 public:
     ConnectionNotEstablishedException();
     ~ConnectionNotEstablishedException();
+
+    const std::string what();
 };
