@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <sys/socket.h>
 #include <netdb.h>
@@ -24,7 +25,7 @@ protected:
     std::vector<Connection*> m_connections;
     u_int16_t m_port;
     int m_socket_fd;
-    void(*m_onConnect)(Connection&);
+    std::function<void(Connection&)> m_on_connect;
 public:
     Server();
     ~Server();
@@ -37,9 +38,9 @@ public:
     Connection& awaitNewConnection();
     Connection& awaitNewConnection(int);
 
-    Connection& allowConnection(void(*)(Connection&));
-    Connection& awaitNewConnection(void(*)(Connection&));
-    Connection& awaitNewConnection(int, void(*)(Connection&));
+    Connection& allowConnection(std::function<void(Connection&)>);
+    Connection& awaitNewConnection(std::function<void(Connection&)>);
+    Connection& awaitNewConnection(int, std::function<void(Connection&)>);
 
     u_int16_t getPort();
 
