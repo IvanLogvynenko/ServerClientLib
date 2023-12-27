@@ -23,6 +23,6 @@ int main(const int argv, const char** argc) {
     LOG("Hosted on a port " << server.getPort());
 
     server.allowConnection();
-
+    
     ILOG("End");
 }

@@ -5,14 +5,16 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "debugKit/basic.hpp"
 
-#include "../Connection/Connection.hpp"
+#include "Connection/Connection.hpp"
 
 #include "Exceptions/HostException.hpp"
 #include "Exceptions/BindException.hpp"
 #include "Exceptions/ListenException.hpp"
+#include "Exceptions/ConnectionException.hpp"
 
 #define LISTEN_BACKLOG 20
 
@@ -31,10 +33,17 @@ public:
     void host(const int port);
 
     Connection allowConnection();
+    Connection awaitNewConnection();
+    Connection awaitNewConnection(int);
 
     u_int16_t getPort();
 
     operator int();
+    operator u_int16_t();
+
+    operator pollfd();
+    operator std::vector<pollfd>();
+
 private:
     void host(const u_int16_t);
 };

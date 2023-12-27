@@ -24,6 +24,7 @@ add_executable(server
     src/Exceptions/BindException.cpp
     src/Exceptions/ListenException.cpp
     src/Exceptions/HostException.cpp
+    src/Exceptions/ConnectionException.cpp
 )
 target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
 

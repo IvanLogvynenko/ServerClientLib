@@ -19,7 +19,9 @@ protected:
     u_int16_t m_socket_fd;
     Connection m_connection;
     bool m_connection_established;
+
     Connection m_connectTo(const char*, const u_int16_t);
+    static u_int16_t openSocket();
 public:
     Client();
     ~Client();
@@ -30,4 +32,5 @@ public:
     void disconnect();
 
     operator int();
+    operator u_int16_t();
 };

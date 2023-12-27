@@ -1,14 +1,10 @@
 #include "Client.hpp"
 
-Client::Client() : m_connection(Connection("", -1)), m_connection_established(false) {
-    int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    LOG("Socket opened");
-    if (socket_fd == -1) {
-        EL("Socket opening failed");
-        throw SocketOpeningException();
-    }
-    LOG("Socket is valid");
-    this->m_socket_fd = (u_int16_t)socket_fd;
+Client::Client() : 
+    m_socket_fd(openSocket()), 
+    m_connection(Connection("", -1, -1)),
+    m_connection_established(false) {
+        LOG("Created client");
 }
 
 Client::~Client() {
@@ -38,18 +34,34 @@ Connection Client::m_connectTo(const char* host, const u_int16_t port) {
     }
     LOG("Connected successfully");
     this->m_connection_established = true;
-    return Connection(*this);
+    return Connection(*this, port);
+}
+
+u_int16_t Client::openSocket()
+{
+    int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    LOG("Socket opened");
+    if (socket_fd == -1) {
+        EL("Socket opening failed");
+        throw SocketOpeningException();
+    }
+    LOG("Socket is valid");
+    return std::move((u_int16_t)socket_fd);
 }
 
 void Client::disconnect() {
-    if (shutdown(*this, 2)) {
-        EL("Failed to disconnect");
-        throw DisconnectionException(this->m_socket_fd);
-    }
-    this->m_connection = Connection("", -1);
+    LOG("Closed socket");
+    close(this->m_socket_fd);
+    this->m_socket_fd = openSocket();
+    this->m_connection = Connection("", -1, -1);
     this->m_connection_established = false;
 }
 
 Client::operator int() {
+    return this->m_socket_fd;
+}
+
+Client::operator u_int16_t()
+{
     return this->m_socket_fd;
 }

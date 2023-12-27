@@ -48,10 +48,43 @@ void Server::host(const u_int16_t port)
     ILOG("Opened and configured socket succesfully");
 }
 
+/// @brief use it only if you're sure that there is a connection awaiting for you to capture it, 
+/// otherwise awaitNewConnection() is a better option
+/// @return Returns an instance of Connection with socket descriptor and port recieved during connection
 Connection Server::allowConnection()
 {
-    int new_connection_fd = accept(*this, nullptr, nullptr);
-    Connection connection = Connection(new_connection_fd);
+    sockaddr_in incomming;
+    socklen_t length = sizeof(struct sockaddr_in);
+    int new_connection_fd = accept(*this, (struct sockaddr *)&incomming, &length);
+    if (new_connection_fd == -1) {
+        EL("Failed to create a connection");
+        throw ConnectionException(std::to_string(this->m_socket_fd), std::to_string(incomming.sin_port));
+    }
+    Connection connection = Connection((u_int16_t)new_connection_fd, incomming.sin_port);
+    this->m_connections.push_back(connection);
+    return connection;
+}
+
+Connection Server::awaitNewConnection()
+{
+    //https://stackoverflow.com/questions/529975/what-does-poll-do-with-a-timeout-of-0 so it should be -1 and not 0
+    return this->awaitNewConnection(-1);
+}
+
+Connection Server::awaitNewConnection(int awaitMilliseconds)
+{
+    if (!awaitMilliseconds)
+        return this->allowConnection();
+    LOG("Awaiting new connection");
+    
+    pollfd pfd = *this;
+    poll(&pfd, 1, awaitMilliseconds);
+
+    sockaddr_in incomming;
+    socklen_t length = sizeof(struct sockaddr_in);
+    int new_connection_fd = accept(*this, (struct sockaddr *)&incomming, &length);
+    LOG("Got new connection");
+    Connection connection = Connection((u_int16_t)new_connection_fd, incomming.sin_port);
     this->m_connections.push_back(connection);
     return connection;
 }
@@ -63,4 +96,21 @@ u_int16_t Server::getPort() {
 //operators
 Server::operator int() {
     return this->m_socket_fd;
+}
+Server::operator u_int16_t()
+{
+    return (u_int16_t)this->m_socket_fd;
+}
+Server::operator pollfd()
+{
+    return pollfd{*this, POLLIN, 0};
+}
+
+Server::operator std::vector<pollfd>()
+{
+    std::vector<pollfd> result = {};
+    result.push_back(*this);
+    for (size_t i = 0; i < this->m_connections.size(); i++)
+        result.push_back(this->m_connections[i]);   
+    return result; 
 }

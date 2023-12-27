@@ -11,6 +11,6 @@ int main(const int argv, const char** argc) {
 
     Client client = Client();
     client.connectTo(argc[1], argc[2]);
-    
+    client.disconnect();
     ILOG("End");
 }

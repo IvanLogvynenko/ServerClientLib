@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include "Exceptions/Exception.hpp"
 
 class ServerException : public Exception
