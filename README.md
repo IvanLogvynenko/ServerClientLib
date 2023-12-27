@@ -31,7 +31,7 @@ It is a basic **Server-Client library**, instances of which you might find on th
 
 # First Launch
 If you have just cloned the repo, you won't have any binaries and staff. I've created a file `scripts/launch.sh`. 
-    ``` bash
-    ./scripts/launch.sh
-    ```
+``` bash
+./scripts/launch.sh
+```
 By running this file the project would be built. If you get some problems it is your problems. On my pc everything works.
