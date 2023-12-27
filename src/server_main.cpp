@@ -4,16 +4,16 @@
 #include "Server/Server.hpp"
 
 #ifndef DEFAULT_PORT
-    #define DEFAULT_PORT 11999
+    #define DEFAULT_PORT "11999"
 #endif // !DEFAULT_PORT
 
 int main(const int argv, const char** argc) {
+    ILOG("Start");
     if (argv != 2) {
-        std::cout << "Usage: " << argc[0] << "[" << argc[0] << "]" << "\n";
+        std::cout << "Usage: " << argc[0] << " [port]" << "\n";
         std::cout << "Hosting on a basic port: " << DEFAULT_PORT << "\n";
         std::cout << "Hint: <You can set default port with DEFAULT_PORT header while building>\n";
     }
-    ILOG("Start");
     LOG("Created server");
     Server server = Server();
     if (argv != 2) 
@@ -23,6 +23,6 @@ int main(const int argv, const char** argc) {
     LOG("Hosted on a port " << server.getPort());
 
     server.allowConnection();
-    
+
     ILOG("End");
 }

@@ -12,6 +12,7 @@ include_directories(./src)
 add_compile_definitions(DEBUG)
 add_compile_definitions(ERROR)
 add_compile_definitions(FULL_LOGGING)
+add_compile_definitions(DEFAULT_PORT="6767")
 
 add_executable(server
     src/server_main.cpp
