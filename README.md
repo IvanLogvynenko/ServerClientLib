@@ -5,7 +5,8 @@ It is a basic **Server-Client library**, instances of which you might find on th
 # Requirements
  - Any **linux distro** since I'm using linux sockets and not windows sockets here, because... Windows sucks(IMHO). I personaly
  recommend using Fedora Workstation *https://fedoraproject.org/workstation/*
- - `CMake/Make`
+
+ - CMake/Make
 
     - Red Hat based: 
     ``` bash
@@ -21,11 +22,13 @@ It is a basic **Server-Client library**, instances of which you might find on th
     ``` bash
     sudo apt install cmake make
     ```
+
  - g++ (c++*11* or higher)
     Red Hat based: 
     ``` bash
     sudo dnf install gcc-c++
     ```
+    
  - Brains (Preferably yours)
     Well you need to be born with them
 
