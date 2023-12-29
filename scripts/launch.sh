@@ -12,7 +12,10 @@ else
     fi
 fi
 
-
+# Check if build dir exists
+if [ ! -x "../build" ]; then
+    mkdir ../build
+fi
 
 # Check if the server executable exists
 if [ ! -x "../build/server" ]; then
@@ -45,6 +48,11 @@ if [ ! -x "../build/client" ]; then
             exit 1
         fi
     }
+fi
+
+# Check if log dir exists
+if [ ! -x "../logs" ]; then
+    mkdir ../logs
 fi
 
 cd ../
