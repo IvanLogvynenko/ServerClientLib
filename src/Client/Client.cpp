@@ -57,6 +57,20 @@ bool Client::checkIfConnected() {
     return this->m_connection.checkValidity();
 }
 
+void Client::sendMessage(std::string message) {
+    Message *new_message = new Message(message);
+    this->sendMessage(new_message);
+    delete new_message;
+}
+
+void Client::sendMessage(Message* message) {
+    LOG("About to send message, value: " << *message);
+    if (send(this->m_socket_fd, *message, message->size(), 0) == -1) {
+        EL("Message was not sent");
+        throw MessageSendingException();
+    } 
+}
+
 Client::operator int() {
     return this->m_socket_fd;
 }

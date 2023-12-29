@@ -1,5 +1,5 @@
 #pragma once
-#include "Exceptions/Exception.hpp"
+#include "../Exceptions/Exception.hpp"
 
 class TimeOutException : public Exception
 {

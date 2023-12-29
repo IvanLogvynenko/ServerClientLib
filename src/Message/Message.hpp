@@ -10,5 +10,8 @@ public:
     Message(std::string data);
     ~Message();
 
+    size_t size();
+
     operator std::string();
+    operator const char*();
 };

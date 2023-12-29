@@ -16,6 +16,7 @@
 #include "Exceptions/BindException.hpp"
 #include "Exceptions/ListenException.hpp"
 #include "Exceptions/ConnectionException.hpp"
+#include "Exceptions/TimeOutException.hpp"
 
 #define LISTEN_BACKLOG 20
 

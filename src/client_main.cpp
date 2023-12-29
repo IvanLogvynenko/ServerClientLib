@@ -19,6 +19,7 @@ int main(const int argv, const char** argc) {
 
     Client client = Client();
     client.connectTo(argc[1], port);
+    client.sendMessage("Hello");
     client.disconnect();
     ILOG("End");
 }

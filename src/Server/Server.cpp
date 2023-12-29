@@ -61,7 +61,7 @@ void Server::host(const u_int16_t port)
 /// @return Returns an instance of Connection with socket descriptor and port recieved during connection
 Connection& Server::allowConnection()
 {
-    return allowConnection(nullptr);
+    return this->allowConnection(nullptr);
 }
 //https://stackoverflow.com/questions/529975/what-does-poll-do-with-a-timeout-of-0 so it should be -1 and not 0
 Connection& Server::awaitNewConnection()
@@ -76,19 +76,25 @@ Connection& Server::allowConnection(std::function<void(Connection&)> on_connect)
 {
     sockaddr_in incomming;
     socklen_t length = sizeof(struct sockaddr_in);
+    LOG("About to accept new connection");
     int new_connection_fd = accept(*this, (struct sockaddr *)&incomming, &length);
     if (new_connection_fd == -1) {
         EL("Failed to create a connection");
         throw ConnectionException(std::to_string(this->m_socket_fd), std::to_string(incomming.sin_port));
     }
+    LOG("Captured socket fd! Value: " << new_connection_fd);
+    ILOG("Connection accepted!");
     Connection* connection = new Connection((u_int16_t)new_connection_fd, incomming.sin_port);
+    LOG("Configuring new connection");
     if (on_connect != nullptr) {
         on_connect(*connection);
         this->m_on_connect = on_connect;
     }
     else if (this->m_on_connect != nullptr)
-            this->m_on_connect(*connection);
+        this->m_on_connect(*connection);
+    LOG("About to finish configuring");
     this->m_connections.push_back(connection);
+    LOG("Configuring finished. Ready to use");
     return *connection;
 }
 Connection &Server::awaitNewConnection(std::function<void(Connection&)> on_connect)
@@ -103,7 +109,10 @@ Connection &Server::awaitNewConnection(int awaitMilliseconds, std::function<void
     LOG("Awaiting new connection");
     
     pollfd pfd = *this;
-    poll(&pfd, 1, awaitMilliseconds);
+    if (!poll(&pfd, 1, awaitMilliseconds)) {
+        EL("Havent recieved any connection attempt in specified time");
+        throw TimeOutException();
+    }
 
     sockaddr_in incomming;
     socklen_t length = sizeof(struct sockaddr_in);

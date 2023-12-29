@@ -12,7 +12,7 @@ include_directories(./src)
 add_compile_definitions(DEBUG)
 add_compile_definitions(ERROR)
 add_compile_definitions(FULL_LOGGING)
-add_compile_definitions(DEFAULT_PORT="6767")
+add_compile_definitions(DEFAULT_PORT="37373")
 
 add_executable(server
     src/server_main.cpp
@@ -26,6 +26,7 @@ add_executable(server
     src/Exceptions/ListenException.cpp
     src/Exceptions/HostException.cpp
     src/Exceptions/ConnectionException.cpp
+    src/Exceptions/TimeOutException.cpp
 )
 target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
 
@@ -34,12 +35,13 @@ add_executable(client
     src/client_main.cpp
     src/Client/Client.cpp
     src/Connection/Connection.cpp
+    src/Message/Message.cpp
 
     src/Exceptions/Exception.cpp
     src/Exceptions/ClientException.cpp
     src/Exceptions/ConnectionException.cpp
     src/Exceptions/DisconnectionException.cpp
     src/Exceptions/SocketOpeningException.cpp
-    src/Exceptions/SocketOpeningException.cpp
+    src/Exceptions/MessageSendingException.cpp
 )
 target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")

@@ -15,6 +15,7 @@
 #include "Exceptions/SocketOpeningException.hpp"
 #include "Exceptions/ConnectionException.hpp"
 #include "Exceptions/DisconnectionException.hpp"
+#include "Exceptions/MessageSendingException.hpp"
 
 class Client
 {
@@ -33,6 +34,9 @@ public:
 
     void disconnect();
     bool checkIfConnected();
+
+    void sendMessage(std::string message);
+    void sendMessage(Message* Message);
 
     operator int();
     operator u_int16_t();
