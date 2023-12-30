@@ -8,7 +8,7 @@ Connection::Connection(u_int16_t ID, u_int16_t socket_fd, u_int16_t port) :
     m_port(port) {}
 
 Connection::Connection(u_int16_t socket_fd, u_int16_t port) : 
-    Connection((socket_fd != (u_int16_t)-1 && port != (u_int16_t)-1 ? id++ : -1), socket_fd, port) {}
+    Connection((socket_fd != (u_int16_t)-1 && port != (u_int16_t)-1 ? id++ : (u_int16_t)-1), socket_fd, port) {}
 
 Connection::Connection(int fd, int port) : 
     Connection((u_int16_t)fd, (u_int16_t)port) {}

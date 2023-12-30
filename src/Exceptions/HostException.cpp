@@ -1,6 +1,6 @@
 #include "HostException.hpp"
 
-HostException::HostException(u_int16_t port) : ServerException(port, -1) {}
+HostException::HostException(u_int16_t port) : ServerException(port, (u_int16_t)-1) {}
 
 HostException::~HostException() {}
 

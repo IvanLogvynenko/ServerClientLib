@@ -44,11 +44,12 @@ public:
     Connection& awaitNewConnection(int, std::function<void(Connection&)>);
 
     u_int16_t getPort();
+    Connection** getConnections();
 
     operator int();
     operator u_int16_t();
     operator pollfd();
-    operator std::vector<pollfd>();
+    operator pollfd*();
 
     Server& operator=(const Server& other);
 

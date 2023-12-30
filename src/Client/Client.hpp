@@ -3,6 +3,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 
 #include "debugKit/basic.hpp"
@@ -16,6 +17,11 @@
 #include "Exceptions/ConnectionException.hpp"
 #include "Exceptions/DisconnectionException.hpp"
 #include "Exceptions/MessageSendingException.hpp"
+#include "Exceptions/NotDisconnectedException.hpp"
+
+#include <string.h>
+#include <memory>
+
 
 class Client
 {
@@ -23,14 +29,13 @@ protected:
     u_int16_t m_socket_fd;
     Connection m_connection;
 
-    Connection m_connectTo(const char*, const u_int16_t);
-    static u_int16_t openSocket();
+    Connection& m_connectTo(const char*, const char*);
+    u_int16_t openSocket(struct addrinfo* res);
 public:
     Client();
     ~Client();
-    Connection connectTo(const char*, const char*);
-    Connection connectTo(const char*, const std::string);
-    Connection connectTo(const char*, const int);
+    Connection& connectTo(const char*, const char*);
+    Connection& connectTo(const char*, const std::string);
 
     void disconnect();
     bool checkIfConnected();

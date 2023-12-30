@@ -58,8 +58,11 @@ fi
 cd ../
 echo "Execution start"
 
-build/server $1 > logs/Server.log &
+build/server $1 &
 pid_server=$!
+
+sleep 1
+echo "Server started. Starting client"
 
 build/client "127.0.0.1" $1 > logs/Client.log & 
 pid_client=$!

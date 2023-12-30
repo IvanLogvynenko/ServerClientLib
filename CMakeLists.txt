@@ -43,5 +43,7 @@ add_executable(client
     src/Exceptions/DisconnectionException.cpp
     src/Exceptions/SocketOpeningException.cpp
     src/Exceptions/MessageSendingException.cpp
+    src/Exceptions/NotDisconnectedException.cpp
 )
 target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")
+target_compile_definitions(client PRIVATE MAX_CONNECTION_ATTEMPTS=50)

@@ -13,13 +13,10 @@ int main(const int argv, const char** argc) {
     }
     ILOG("Start");
 
-    const char* port = argc[2];
-    if (argv == 2)
-        port = DEFAULT_PORT;
-
     Client client = Client();
-    client.connectTo(argc[1], port);
+    client.connectTo(argc[1], (argv == 2) ? DEFAULT_PORT : argc[2]);
+    
     client.sendMessage("Hello");
-    client.disconnect();
+
     ILOG("End");
 }

@@ -2,9 +2,10 @@
 
 Server::Server() : 
     m_connections({}),
-    m_port(-1), 
+    m_port((u_int16_t)-1), 
     m_socket_fd(-1),
     m_on_connect(nullptr) {}
+
 Server::~Server() {
     LOG("Closing socket");
     close(*this);
@@ -43,7 +44,7 @@ void Server::host(const u_int16_t port)
     socketAddr.sin_port = htons(port);
     socketAddr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(*this, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) == -1) {
+    if (bind(this->m_socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) == -1) {
         EL("Socket binding failed");
         throw BindException(port, (u_int16_t)socket_fd);
     }
@@ -113,6 +114,7 @@ Connection &Server::awaitNewConnection(int awaitMilliseconds, std::function<void
         EL("Havent recieved any connection attempt in specified time");
         throw TimeOutException();
     }
+    LOG("Poll() finished. Proceeding to connection configuration");
 
     sockaddr_in incomming;
     socklen_t length = sizeof(struct sockaddr_in);
@@ -123,15 +125,20 @@ Connection &Server::awaitNewConnection(int awaitMilliseconds, std::function<void
         on_connect(*connection);
         this->m_on_connect = on_connect;
     }
-    else {
+    else if (this->m_on_connect != nullptr)
         this->m_on_connect(*connection);
-    }
     this->m_connections.push_back(connection);
+    LOG("Adding of a connection finished");
     return *connection;
 }
 
 u_int16_t Server::getPort() {
     return this->m_port;
+}
+
+Connection** Server::getConnections()
+{
+    return this->m_connections.data();
 }
 
 //operators
@@ -146,13 +153,13 @@ Server::operator pollfd()
 {
     return pollfd{*this, POLLIN, 0};
 }
-Server::operator std::vector<pollfd>()
+Server::operator pollfd*()
 {
     std::vector<pollfd> result = {};
     result.push_back(*this);
     for (size_t i = 0; i < this->m_connections.size(); i++)
         result.push_back(*(this->m_connections[i]));   
-    return result; 
+    return result.data(); 
 }
 Server &Server::operator=(const Server &other) {
     if (this != &other) {
