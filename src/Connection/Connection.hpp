@@ -26,6 +26,7 @@ public:
 
     const static Connection empty;
 
+    bool ifEmpty() const;
     bool checkValidity() const;
 
     u_int8_t getID() const;

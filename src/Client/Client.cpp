@@ -80,8 +80,13 @@ int Client::openSocket(struct addrinfo* res)
 
 void Client::disconnect()
 {
+    LOG("Disconnecting..");
     close(this->m_socket_fd);
     this->m_socket_fd = -1;
+    if (!this->m_connection->ifEmpty())
+        delete this->m_connection;
+    this->m_connection = new Connection(Connection::empty);
+    LOG("Disconnected");
 }
 
 bool Client::checkIfConnected() const 
@@ -103,11 +108,10 @@ void Client::sendMessage(std::string data) const
 
 void Client::sendMessage(Message& message) const
 {
-    LOG("Sending message");
-    LOG("Message: " << message);
+    LOG("Sending message: " << message);
     LOG("Current socket fd is " << this->m_socket_fd);
     if (send(*m_connection, message, message.size(), 0) == -1) {
-        EL("message sending failed");
+        EL("Message sending failed");
         throw std::runtime_error("Message sending error");
     }
 }

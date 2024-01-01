@@ -58,7 +58,7 @@ fi
 cd ../
 echo "Execution start"
 
-build/server $1 &
+build/server $1 > logs/Server.log &
 pid_server=$!
 
 echo "Server started. Starting client"

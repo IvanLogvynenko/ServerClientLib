@@ -36,7 +36,7 @@ Connection::Connection(int socket_fd, int port) :
         ID = 0;
     else {
         ID = id++; 
-        LOG("Connection " << this->ID << " opened");
+        LOG("Connection " << (int)this->ID << " opened");
     }
     
 }
@@ -51,7 +51,8 @@ Connection::Connection(const Connection &other) :
     {}
 
 Connection::~Connection() {
-    LOG("Connection " << this->ID << " closed");
+    if (this->ID != 0)
+        LOG("Connection " << (int)this->ID << " closed");
 }
 
 Connection & Connection::operator=(const Connection& other)
@@ -65,7 +66,12 @@ Connection & Connection::operator=(const Connection& other)
     return *this;
 }
 
-//now important functions
+bool Connection::ifEmpty() const
+{
+    return this->isEmpty;
+}
+
+// now important functions
 bool Connection::checkValidity() const
 {
     return this->m_socket_fd != -1 

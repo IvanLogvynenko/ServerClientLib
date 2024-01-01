@@ -25,8 +25,6 @@ int main(const int argv, const char** argc) {
     LOG("Server socket fd is " << (int)server);
 
     server.awaitNewConnection();
-    // server.allowConnection();
-
     LOG("Getting ready to recieve");
 
     std::unique_ptr<Responce> response = server.recieveMessageFrom();
