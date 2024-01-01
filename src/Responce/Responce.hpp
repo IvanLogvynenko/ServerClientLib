@@ -1,13 +1,19 @@
 #pragma once
 #include <string>
+#include <array>
 
 #include "../Message/Message.hpp"
+
+#ifndef BUFFER_SIZE
+    #define BUFFER_SIZE 100
+#endif // !BUFFER_SIZE
 
 class Responce : public Message
 {
 public:
     Responce();
     Responce(std::string data);
+    Responce(std::array<char, BUFFER_SIZE> data, int length);
     ~Responce();
 
     operator std::string();

@@ -14,19 +14,19 @@ add_compile_definitions(ERROR)
 add_compile_definitions(FULL_LOGGING)
 add_compile_definitions(DEFAULT_PORT="37373")
 
+add_compile_definitions(BUFFER_SIZE=50)
+
+# main usage is in poll()s
+# if the value is -1 then it would wait until something happens
+# You'd better use functions that allow to state timeout and leave this value as it is
+add_compile_definitions(DEFAULT_TIMEOUT=-1)
+
 add_executable(server
     src/server_main.cpp
     src/Server/Server.cpp
     src/Connection/Connection.cpp
-
-    src/Exceptions/Exception.cpp
-
-    src/Exceptions/ServerException.cpp
-    src/Exceptions/BindException.cpp
-    src/Exceptions/ListenException.cpp
-    src/Exceptions/HostException.cpp
-    src/Exceptions/ConnectionException.cpp
-    src/Exceptions/TimeOutException.cpp
+    src/Message/Message.cpp
+    src/Responce/Responce.cpp
 )
 target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
 
@@ -36,14 +36,9 @@ add_executable(client
     src/Client/Client.cpp
     src/Connection/Connection.cpp
     src/Message/Message.cpp
-
-    src/Exceptions/Exception.cpp
-    src/Exceptions/ClientException.cpp
-    src/Exceptions/ConnectionException.cpp
-    src/Exceptions/DisconnectionException.cpp
-    src/Exceptions/SocketOpeningException.cpp
-    src/Exceptions/MessageSendingException.cpp
-    src/Exceptions/NotDisconnectedException.cpp
+    src/Responce/Responce.cpp
 )
-target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")
-target_compile_definitions(client PRIVATE MAX_CONNECTION_ATTEMPTS=50)
+target_compile_definitions(client PRIVATE 
+    EXECUTABLE_NAME="CLIENT")
+target_compile_definitions(client PRIVATE 
+    MAX_CONNECTION_ATTEMPTS=50)

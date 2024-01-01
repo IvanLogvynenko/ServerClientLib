@@ -7,10 +7,6 @@
     #define DEFAULT_PORT "11999"
 #endif // !DEFAULT_PORT
 
-/// @brief 
-/// @param argv 
-/// @param argc 
-/// @return 
 int main(const int argv, const char** argc) {
     ILOG("Start");
     if (argv != 2) {
@@ -21,23 +17,20 @@ int main(const int argv, const char** argc) {
     LOG("Created server");
     Server server = Server();
     if (argv != 2) 
-        server.host(DEFAULT_PORT);
+        server.host();
     else 
         server.host(argc[1]);
+    
     LOG("Hosted on a port " << server.getPort());
     LOG("Server socket fd is " << (int)server);
 
-    // server.awaitNewConnection();
-    server.allowConnection();
+    server.awaitNewConnection();
+    // server.allowConnection();
 
     LOG("Getting ready to recieve");
-    // poll(server, sizeof server.getConnections(), -1);
 
-    // char* buf[5];
-
-    // recv(*(server.getConnections()[1]), buf, 5, 0);
-
-    // LOG("Got data" << buf);
+    std::unique_ptr<Responce> response = server.recieveMessageFrom();
+    LOG("Got message " << *response);
 
     ILOG("End");
 }

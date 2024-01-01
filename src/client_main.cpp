@@ -14,8 +14,8 @@ int main(const int argv, const char** argc) {
     ILOG("Start");
 
     Client client = Client();
-    client.connectTo(argc[1], (argv == 2) ? DEFAULT_PORT : argc[2]);
-    
+    client.connectTo(argc[1]);
+
     client.sendMessage("Hello");
 
     ILOG("End");

@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <string.h>
+#include <memory>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,37 +15,30 @@
 #include "Message/Message.hpp"
 #include "Responce/Responce.hpp"
 
-#include "Exceptions/SocketOpeningException.hpp"
-#include "Exceptions/ConnectionException.hpp"
-#include "Exceptions/DisconnectionException.hpp"
-#include "Exceptions/MessageSendingException.hpp"
-#include "Exceptions/NotDisconnectedException.hpp"
-
-#include <string.h>
-#include <memory>
-
+#ifndef BUFFER_SIZE
+    #define BUFFER_SIZE 100
+#endif // !BUFFER_SIZE
 
 class Client
 {
 protected:
-    u_int16_t m_socket_fd;
-    Connection m_connection;
+    int m_socket_fd;
+    Connection* m_connection;
 
-    Connection& m_connectTo(const char*, const char*);
-    u_int16_t openSocket(struct addrinfo* res);
+    static int openSocket(struct addrinfo* res);
 public:
     Client();
     ~Client();
-    Connection& connectTo(const char*, const char*);
-    Connection& connectTo(const char*, const std::string);
+
+    Connection& connectTo(const char* = "127.0.0.1", const char* = DEFAULT_PORT);
 
     void disconnect();
-    bool checkIfConnected();
+    bool checkIfConnected()const ;
 
-    void sendMessage(std::string message);
-    void sendMessage(Message* Message);
+    void sendMessage(const char* = "") const;
+    void sendMessage(std::string = "") const;
+    void sendMessage(Message&) const;
 
-    operator int();
-    operator u_int16_t();
+    operator int() const;
     Client& operator=(const Client& other);
 };

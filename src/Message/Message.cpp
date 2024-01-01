@@ -11,7 +11,7 @@ size_t Message::size()
 }
 
 Message::operator std::string() {
-    return "";
+    return this->m_data;
 }
 
 Message::operator const char *()

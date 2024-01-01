@@ -9,27 +9,31 @@
 class Connection
 {
 private:
-    static unsigned short id;
+    static u_int8_t id;
+    bool isEmpty;
 protected:
-    Connection(u_int16_t, u_int16_t, u_int16_t);
+    Connection(u_int8_t, int, int, bool);
 
-    unsigned short ID;
-    u_int16_t m_socket_fd;
-    u_int16_t m_port;
+    u_int8_t ID;
+    int m_socket_fd;
+    int m_port;
 
 public:
-    Connection(u_int16_t, u_int16_t);
+    Connection();
     Connection(int, int);
+    Connection(const Connection&);
     ~Connection();
 
-    bool checkValidity();
+    const static Connection empty;
 
-    unsigned short getID();
+    bool checkValidity() const;
+
+    u_int8_t getID() const;
 
     operator int() const;
     operator pollfd() const;
 
-    Connection& operator=(const Connection& instance);
+    Connection& operator=(const Connection&);
 };
 
 
