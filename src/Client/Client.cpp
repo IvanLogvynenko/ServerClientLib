@@ -115,3 +115,16 @@ void Client::sendMessage(Message& message) const
         throw std::runtime_error("Message sending error");
     }
 }
+
+std::unique_ptr<Responce> Client::recieveMessage() const
+{
+    std::array<char, BUFFER_SIZE> buffer;
+    int data_size = 0;
+    int socket_to_recieve_from = *(this->m_connection);
+    if (data_size = (int)recv(socket_to_recieve_from, buffer.data(), BUFFER_SIZE, 0); data_size == -1) {
+        EL("Failed to recieve data from " << socket_to_recieve_from);
+        throw std::runtime_error("Failed to recieve data");
+    }
+    std::unique_ptr<Responce> responce = std::make_unique<Responce>(buffer, data_size);
+    return responce;
+}

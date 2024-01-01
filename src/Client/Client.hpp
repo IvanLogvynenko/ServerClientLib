@@ -39,6 +39,8 @@ public:
     void sendMessage(std::string = "") const;
     void sendMessage(Message&) const;
 
+    std::unique_ptr<Responce> recieveMessage() const;
+
     operator int() const;
     Client& operator=(const Client& other);
 };

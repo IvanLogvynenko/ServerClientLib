@@ -27,8 +27,7 @@ int main(const int argv, const char** argc) {
     server.awaitNewConnection();
     LOG("Getting ready to recieve");
 
-    std::unique_ptr<Responce> response = server.recieveMessageFrom();
-    LOG("Got message " << *response);
-
+    LOG("Got message " << *server.recieveMessageFrom());
+    server.respond("<<<---Hi!--->>>");
     ILOG("End");
 }

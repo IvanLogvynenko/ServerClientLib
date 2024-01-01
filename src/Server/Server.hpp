@@ -32,22 +32,29 @@ protected:
     int m_socket_fd;
     std::vector<std::shared_ptr<Connection>> m_connections;
     std::function<void(Connection&)> m_on_connect;
+
+    int m_lastly_used_connection;
 public:
     Server();
     ~Server();
 
     void host(const char* = DEFAULT_PORT);
 
-    Connection& 
-    awaitNewConnection(int = DEFAULT_TIMEOUT, std::function<void(Connection&)> = nullptr);
+    Connection& awaitNewConnection(int = DEFAULT_TIMEOUT, std::function<void(Connection&)> = nullptr);
 
     int getPort();
     
-    std::vector<std::shared_ptr<Connection>> 
-    getConnections();
+    std::vector<std::shared_ptr<Connection>> getConnections();
 
-    std::unique_ptr<Responce> 
-    recieveMessageFrom(const int = 0) const;
+    void sendMessage(const char* = "", const int = 0) const;
+    void sendMessage(std::string = "", const int = 0) const;
+    void sendMessage(Message&, const int = 0) const;
+
+    std::unique_ptr<Responce> recieveMessageFrom(const int = 0);
+
+    void respond(const char* = "") const;
+    void respond(std::string = "") const;
+    void respond(Message&) const;
 
     operator int();
     Server& operator=(const Server& other);

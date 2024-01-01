@@ -16,7 +16,7 @@ int main(const int argv, const char** argc) {
     Client client = Client();
     client.connectTo(argc[1]);
 
-    client.sendMessage("Hello");
-
+    client.sendMessage(" <<<---Hello--->>>");
+    LOG("Get data: " << *client.recieveMessage());
     ILOG("End");
 }
