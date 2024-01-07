@@ -90,17 +90,17 @@ void Server::respond(Message& message) const
     }
 }
 
-void Server::sendMessage(const char * data, const int index) const
+void Server::sendMessage(const char * data, size_t index) const
 {
     Message message = Message(data);
     sendMessage(message, index);
 }
-void Server::sendMessage(std::string data, const int index) const
+void Server::sendMessage(std::string data, size_t index) const
 {
     Message message = Message(data);
     sendMessage(message, index);
 }
-void Server::sendMessage(Message& message, const int index) const
+void Server::sendMessage(Message& message, size_t index) const
 {
     sendMessage(message, *(this->m_connections[index]));
 }
@@ -113,7 +113,7 @@ void Server::sendMessage(Message &message, const Connection & connection) const
     }
 }
 
-std::unique_ptr<Responce> Server::recieveMessageFrom(const int index)
+std::unique_ptr<Responce> Server::recieveMessageFrom(size_t index)
 {
     return recieveMessageFrom(*(this->m_connections[index]));
 }

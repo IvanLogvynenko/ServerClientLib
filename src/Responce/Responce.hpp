@@ -13,7 +13,7 @@ class Responce : public Message
 public:
     Responce();
     Responce(std::string data);
-    Responce(std::array<char, BUFFER_SIZE> data, int length);
+    Responce(std::array<char, BUFFER_SIZE> data, size_t length);
     ~Responce();
 
     operator std::string();

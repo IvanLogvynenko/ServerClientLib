@@ -22,7 +22,6 @@ add_compile_definitions(CONNECTION_HANDLING_TIMEOUT=500)
 add_compile_definitions(DEFAULT_TIMEOUT=500)
 
 
-
 add_executable(server
     src/server_main.cpp
 
@@ -33,7 +32,7 @@ add_executable(server
     src/Responce/Responce.cpp
 )
 target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
-target_compile_definitions(server PRIVATE MAX_CONNECTION_ATTEMPTS=500)
+add_compile_definitions(MAX_CONNECTION_ATTEMPTS=50)
 
 add_executable(client
     src/client_main.cpp
@@ -45,4 +44,11 @@ add_executable(client
     src/Responce/Responce.cpp
 )
 target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")
-target_compile_definitions(client PRIVATE MAX_CONNECTION_ATTEMPTS=50)
+
+add_library(ServerClient
+    src/Server/Server.cpp
+    src/Client/Client.cpp
+    src/Connection/Connection.cpp
+    src/Message/Message.cpp
+    src/Responce/Responce.cpp    
+)

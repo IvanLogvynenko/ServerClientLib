@@ -55,12 +55,12 @@ public:
     
     std::vector<std::shared_ptr<Connection>> getConnections();
 
-    void sendMessage(const char* = "", const int = 0) const;
-    void sendMessage(std::string = "", const int = 0) const;
-    void sendMessage(Message&, const int = 0) const;
+    void sendMessage(const char* = "", size_t = 0) const;
+    void sendMessage(std::string = "", size_t = 0) const;
+    void sendMessage(Message&, size_t = 0) const;
     void sendMessage(Message&, const Connection& connection) const;
 
-    std::unique_ptr<Responce> recieveMessageFrom(const int = 0);
+    std::unique_ptr<Responce> recieveMessageFrom(size_t = 0);
     std::unique_ptr<Responce> recieveMessageFrom(const Connection&);
 
     void respond(const char* = "") const;
