@@ -157,12 +157,6 @@ Server &Server::operator=(const Server &other)
     return *this;
 }
 
-void Server::setConnectionHandler(std::function<void(Connection &)> on_connect)
-{
-    if (on_connect != nullptr) 
-        this->m_on_connect = on_connect;
-}
-
 void Server::startConnectionHandling(std::function<void(Connection &)> on_connect)
 {
     if (this->m_connection_handling_started.load())
@@ -177,7 +171,7 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
             struct sockaddr remoteaddr;
             socklen_t addrlen = sizeof(remoteaddr);
 
-            while (poll(&data, 1, DEFAULT_TIMEOUT) > 0) {
+            while (poll(&data, 1, CONNECTION_HANDLING_TIMEOUT) > 0) {
                 int new_fd = 0;
                 if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
                     EL("Failed to accept new connection");
@@ -205,4 +199,8 @@ void Server::stopConnectionHandling()
     LOG("Stopped new connection handling");
     this->m_connection_handling_started.store(false);
 }
+
+
+
+
 

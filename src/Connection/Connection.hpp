@@ -10,10 +10,10 @@ class Connection
 {
 private:
     static u_int8_t id;
-    bool isEmpty;
 protected:
     Connection(u_int8_t, int, int, bool);
 
+    bool isEmpty;
     u_int8_t ID;
     int m_socket_fd;
     int m_port;

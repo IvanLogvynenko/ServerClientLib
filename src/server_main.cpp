@@ -9,9 +9,9 @@
 int main(const int argv, const char** argc) {
     ILOG("Start");
     if (argv != 2) {
-        std::cout << "Usage: " << argc[0] << " [port]" << "\n";
-        std::cout << "Hosting on a basic port: " << DEFAULT_PORT << "\n";
-        std::cout << "Hint: <You can set default port with DEFAULT_PORT header while building>\n";
+        std::cout << "\tUsage: " << argc[0] << " [port]" << "\n";
+        std::cout << "\tHosting on a basic port: " << DEFAULT_PORT << "\n";
+        std::cout << "\tHint: <You can set default port with DEFAULT_PORT header while building>\n";
     }
     LOG("Created server");
     Server server = Server();
@@ -24,15 +24,11 @@ int main(const int argv, const char** argc) {
     LOG("Server socket fd is " << (int)server);
 
     auto on_connect = [&](Connection& connection){
-        LOG("Got message " << *server.recieveMessageFrom(connection));
-        server.respond("<<<---Hi!--->>>");
+        server.respond(*server.recieveMessageFrom(connection));
     };
 
     server.awaitNewConnection(on_connect);
     server.startConnectionHandling(on_connect);
-    // LOG("Getting ready to recieve");
 
-    // LOG("Got message " << *server.recieveMessageFrom());
-    // server.respond("<<<---Hi!--->>>");
     ILOG("End");
 }

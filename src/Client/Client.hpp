@@ -35,8 +35,8 @@ public:
     void disconnect();
     bool checkIfConnected()const ;
 
-    void sendMessage(const char* = "") const;
-    void sendMessage(std::string = "") const;
+    void sendMessage(const char* = DEFAULT_MESSAGE) const;
+    void sendMessage(std::string = DEFAULT_MESSAGE) const;
     void sendMessage(Message&) const;
 
     std::unique_ptr<Responce> recieveMessage() const;

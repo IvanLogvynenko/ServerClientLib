@@ -12,14 +12,16 @@ include_directories(./src)
 add_compile_definitions(DEBUG)
 add_compile_definitions(ERROR)
 add_compile_definitions(FULL_LOGGING)
+
 add_compile_definitions(DEFAULT_PORT="37373")
 
 add_compile_definitions(BUFFER_SIZE=50)
+add_compile_definitions(DEFAULT_MESSAGE="")
 
-# main usage is in poll()s
-# if the value is -1 then it would wait until something happens
-# You'd better use functions that allow to state timeout and leave this value as it is
+add_compile_definitions(CONNECTION_HANDLING_TIMEOUT=5000)
 add_compile_definitions(DEFAULT_TIMEOUT=500)
+
+
 
 add_executable(server
     src/server_main.cpp
@@ -31,7 +33,7 @@ add_executable(server
     src/Responce/Responce.cpp
 )
 target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
-
+target_compile_definitions(server PRIVATE MAX_CONNECTION_ATTEMPTS=500)
 
 add_executable(client
     src/client_main.cpp
@@ -42,7 +44,5 @@ add_executable(client
     src/Message/Message.cpp
     src/Responce/Responce.cpp
 )
-target_compile_definitions(client PRIVATE 
-    EXECUTABLE_NAME="CLIENT")
-target_compile_definitions(client PRIVATE 
-    MAX_CONNECTION_ATTEMPTS=50)
+target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")
+target_compile_definitions(client PRIVATE MAX_CONNECTION_ATTEMPTS=50)

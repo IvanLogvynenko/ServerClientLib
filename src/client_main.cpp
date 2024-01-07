@@ -8,15 +8,15 @@
 
 int main(const int argv, const char** argc) {
     if (argv != 3) {
-        std::cout << "Usage " << argc[0] << " [adress] [port]\n";
-        std::cout << "Using default port" << DEFAULT_PORT << std::endl;
+        std::cout << "\tUsage " << argc[0] << " [adress] [port]\n";
+        std::cout << "\tUsing default port" << DEFAULT_PORT << std::endl;
     }
     ILOG("Start");
 
     Client client = Client();
     client.connectTo(argc[1]);
 
-    client.sendMessage(" <<<---Hello--->>>");
+    client.sendMessage("<<<---My message--->>>");
     try {
         LOG("Get data: " << *client.recieveMessage());
     }

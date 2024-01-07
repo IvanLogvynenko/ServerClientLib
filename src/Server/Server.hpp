@@ -39,6 +39,8 @@ protected:
     std::atomic_bool m_connection_handling_started;
     std::atomic_bool m_server_destructing_allowed;
     std::function<void(Connection&)> m_on_connect = nullptr;
+
+    std::function<void(Message&)> m_on_message_income = nullptr;
     
     int m_lastly_used_connection = 0;
 public:
@@ -67,7 +69,11 @@ public:
 
     void startConnectionHandling(std::function<void(Connection&)> = nullptr);
     void stopConnectionHandling();
-    void setConnectionHandler(std::function<void(Connection&)> = nullptr);
+
+    void startMessageIncomeHandling(std::function<void(Message&)> = nullptr, bool store_message= false);
+    void stopMessageIncomeHandling();
+
+    void startMessageSendingAfterTimeout(Message&, int = DEFAULT_TIMEOUT);
 
     operator int();
     Server& operator=(const Server& other);
