@@ -70,10 +70,10 @@ public:
     void startConnectionHandling(std::function<void(Connection&)> = nullptr);
     void stopConnectionHandling();
 
-    void startMessageIncomeHandling(std::function<void(Message&)> = nullptr, bool store_message= false);
+    void startMessageIncomeHandling(std::function<void(Message&)> = nullptr, bool = false);
     void stopMessageIncomeHandling();
 
-    void startMessageSendingAfterTimeout(Message&, int = DEFAULT_TIMEOUT);
+    void startSendingMessage(Message&, int = DEFAULT_TIMEOUT);
 
     operator int();
     Server& operator=(const Server& other);

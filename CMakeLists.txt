@@ -15,7 +15,6 @@ add_compile_definitions(DEBUG)
 add_compile_definitions(ERROR)
 add_compile_definitions(FULL_LOGGING)
 
-
 add_executable(server
     src/server_main.cpp
 
@@ -26,7 +25,6 @@ add_executable(server
     src/Responce/Responce.cpp
 )
 target_compile_definitions(server PRIVATE EXECUTABLE_NAME="SERVER")
-add_compile_definitions(MAX_CONNECTION_ATTEMPTS=50)
 
 add_executable(client
     src/client_main.cpp
@@ -39,7 +37,7 @@ add_executable(client
 )
 target_compile_definitions(client PRIVATE EXECUTABLE_NAME="CLIENT")
 
-add_library(ServerClient
+add_library(ServerClientLib
     src/Server/Server.cpp
     src/Client/Client.cpp
     src/Connection/Connection.cpp

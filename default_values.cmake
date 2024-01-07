@@ -5,3 +5,5 @@ add_compile_definitions(DEFAULT_MESSAGE="")
 
 add_compile_definitions(CONNECTION_HANDLING_TIMEOUT=500)
 add_compile_definitions(DEFAULT_TIMEOUT=500)
+
+add_compile_definitions(MAX_CONNECTION_ATTEMPTS=50)

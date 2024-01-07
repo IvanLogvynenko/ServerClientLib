@@ -200,7 +200,15 @@ void Server::stopConnectionHandling()
     this->m_connection_handling_started.store(false);
 }
 
+void Server::startMessageIncomeHandling(std::function<void(Message&)>on_recieve, bool store_message)
+{
+    
+}
+void Server::stopMessageIncomeHandling()
+{
+}
 
-
-
-
+void Server::startSendingMessage(Message& message, int delay)
+{
+    
+}
