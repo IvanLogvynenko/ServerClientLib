@@ -177,7 +177,7 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
             struct sockaddr remoteaddr;
             socklen_t addrlen = sizeof(remoteaddr);
 
-            while (poll(&data, 1, DEFAULT_TIMEOUT*2) > 0) {
+            while (poll(&data, 1, DEFAULT_TIMEOUT) > 0) {
                 int new_fd = 0;
                 if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
                     EL("Failed to accept new connection");
