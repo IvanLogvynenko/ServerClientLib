@@ -1,4 +1,3 @@
-// #define EXECUTABLE_NAME "SERVER"
 #include "debugKit/basic.hpp"
 
 #include "Server/Server.hpp"
@@ -24,10 +23,16 @@ int main(const int argv, const char** argc) {
     LOG("Hosted on a port " << server.getPort());
     LOG("Server socket fd is " << (int)server);
 
-    server.awaitNewConnection();
-    LOG("Getting ready to recieve");
+    auto on_connect = [&](Connection& connection){
+        LOG("Got message " << *server.recieveMessageFrom(connection));
+        server.respond("<<<---Hi!--->>>");
+    };
 
-    LOG("Got message " << *server.recieveMessageFrom());
-    server.respond("<<<---Hi!--->>>");
+    server.awaitNewConnection(on_connect);
+    server.startConnectionHandling(on_connect);
+    // LOG("Getting ready to recieve");
+
+    // LOG("Got message " << *server.recieveMessageFrom());
+    // server.respond("<<<---Hi!--->>>");
     ILOG("End");
 }

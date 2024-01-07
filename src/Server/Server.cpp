@@ -2,12 +2,15 @@
 
 Server::Server() :
     m_port(-1),
-    m_socket_fd(-1),
-    m_connections(0),
-    m_on_connect(nullptr),
-    m_lastly_used_connection(0)
-{}
-Server::~Server() {}
+    m_socket_fd(-1)
+{
+    m_server_destructing_allowed.store(false);
+}
+Server::~Server() {
+    while (!m_server_destructing_allowed.load());
+    stopConnectionHandling();
+    close(this->m_socket_fd);
+}
 
 
 void Server::host(const char *port)
@@ -39,21 +42,19 @@ void Server::host(const char *port)
     this->m_port = atoi(port);
     this->m_socket_fd = socket_fd;
 }
-Connection & Server::awaitNewConnection(int timeout, std::function<void(Connection&)> on_connect)
+Connection & Server::awaitNewConnection(std::function<void(Connection&)> on_connect)
 {
+    const std::lock_guard<std::mutex> lock(m_connections_mutex);
     struct sockaddr remoteaddr;
     socklen_t addrlen = sizeof(remoteaddr);
 
-    pollfd data = (pollfd){this->m_socket_fd, POLLIN, 0};
-    poll(&data, 1, timeout);
-
     int new_fd = 0;
     if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
-        EL("Failed to accept new worker");
-        throw std::runtime_error("Failed to accept new worker");
+        EL("Failed to accept new connection");
+        throw std::runtime_error("Failed to accept new connection");
     }
 
-    LOG("New worker accepted " << new_fd);
+    LOG("New connection accepted " << new_fd);
 
     std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, this->m_port);
 
@@ -83,7 +84,6 @@ void Server::respond(Message& message) const
         throw std::runtime_error("You cannot respond since you have not received anything");
     }
     LOG("Sending message: " << message);
-    LOG("Current socket fd is " << this->m_socket_fd);
     if (send(this->m_lastly_used_connection, message, message.size(), 0) == -1) {
         EL("Message sending failed");
         throw std::runtime_error("Message sending error");
@@ -102,9 +102,12 @@ void Server::sendMessage(std::string data, const int index) const
 }
 void Server::sendMessage(Message& message, const int index) const
 {
+    sendMessage(message, *(this->m_connections[index]));
+}
+void Server::sendMessage(Message &message, const Connection & connection) const
+{
     LOG("Sending message: " << message);
-    LOG("Current socket fd is " << this->m_socket_fd);
-    if (send(*(this->m_connections[index]), message, message.size(), 0) == -1) {
+    if (send(connection, message, message.size(), 0) == -1) {
         EL("Message sending failed");
         throw std::runtime_error("Message sending error");
     }
@@ -112,14 +115,18 @@ void Server::sendMessage(Message& message, const int index) const
 
 std::unique_ptr<Responce> Server::recieveMessageFrom(const int index)
 {
+    return recieveMessageFrom(*(this->m_connections[index]));
+}
+std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connection)
+{
     std::array<char, BUFFER_SIZE> buffer;
     int data_size = 0;
-    int socket_to_recieve_from = *(this->m_connections[index]);
-    if (data_size = (int)recv(socket_to_recieve_from, buffer.data(), BUFFER_SIZE, 0); data_size == -1) {
-        EL("Failed to recieve data from " << socket_to_recieve_from);
+    if (data_size = (int)recv(connection, buffer.data(), BUFFER_SIZE, 0); data_size == -1) {
+        EL("Failed to recieve data from " << connection);
         throw std::runtime_error("Failed to recieve data");
     }
-    m_lastly_used_connection = std::move(socket_to_recieve_from);
+    // LOG("Acquired a message from " << connection << " with size " << data_size);
+    m_lastly_used_connection = (int)connection;
     std::unique_ptr<Responce> responce = std::make_unique<Responce>(buffer, data_size);
     return responce;
 }
@@ -150,5 +157,52 @@ Server &Server::operator=(const Server &other)
     return *this;
 }
 
+void Server::setConnectionHandler(std::function<void(Connection &)> on_connect)
+{
+    if (on_connect != nullptr) 
+        this->m_on_connect = on_connect;
+}
 
+void Server::startConnectionHandling(std::function<void(Connection &)> on_connect)
+{
+    if (this->m_connection_handling_started.load())
+        return;
+
+    LOG("Now all incomming connections would be handled");
+    this->m_connection_handling_started.store(true);
+    std::thread connection_handler([&] (std::function<void(Connection&)> on_connect) {
+        pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };
+        while (this->m_connection_handling_started.load()) {
+            const std::lock_guard<std::mutex> lock(m_connections_mutex);
+            struct sockaddr remoteaddr;
+            socklen_t addrlen = sizeof(remoteaddr);
+
+            while (poll(&data, 1, DEFAULT_TIMEOUT*2) > 0) {
+                int new_fd = 0;
+                if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
+                    EL("Failed to accept new connection");
+                }
+
+                ILOG("New connection accepted " << new_fd);
+
+                std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, this->m_port);
+
+                if (on_connect != nullptr) 
+                    this->m_on_connect = on_connect;
+
+                if (this->m_on_connect != nullptr) 
+                    m_on_connect(*connection);
+
+                this->m_connections.push_back(std::move(connection));   
+            }
+            m_server_destructing_allowed.store(true);
+        }
+    }, on_connect);
+    connection_handler.detach();
+}
+void Server::stopConnectionHandling()
+{
+    LOG("Stopped new connection handling");
+    this->m_connection_handling_started.store(false);
+}
 

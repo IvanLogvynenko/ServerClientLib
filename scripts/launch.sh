@@ -65,6 +65,14 @@ echo "Server started. Starting client"
 
 build/client "127.0.0.1" $1 > logs/Client.log & 
 pid_client=$!
+build/client "127.0.0.1" $1 > logs/Client1.log & 
+pid_client=$!
+# build/client "127.0.0.1" $1 > logs/Client2.log & 
+# pid_client=$!
+# build/client "127.0.0.1" $1 > logs/Client3.log & 
+# pid_client=$!
+# build/client "127.0.0.1" $1 > logs/Client4.log & 
+# pid_client=$!
 
 echo "Awaiting execution to finish"
 

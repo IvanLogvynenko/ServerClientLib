@@ -17,6 +17,11 @@ int main(const int argv, const char** argc) {
     client.connectTo(argc[1]);
 
     client.sendMessage(" <<<---Hello--->>>");
-    LOG("Get data: " << *client.recieveMessage());
+    try {
+        LOG("Get data: " << *client.recieveMessage());
+    }
+    catch(const std::exception& e) {
+        EL(e.what());
+    }
     ILOG("End");
 }

@@ -1,9 +1,13 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <array>
+
 #include <functional>
 #include <memory>
-#include <array>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
 #include <sys/socket.h>
 #include <netdb.h>
@@ -30,17 +34,20 @@ class Server
 protected:
     int m_port;
     int m_socket_fd;
-    std::vector<std::shared_ptr<Connection>> m_connections;
-    std::function<void(Connection&)> m_on_connect;
-
-    int m_lastly_used_connection;
+    std::vector<std::shared_ptr<Connection>> m_connections = std::vector<std::shared_ptr<Connection>>(0);
+    std::mutex m_connections_mutex;
+    std::atomic_bool m_connection_handling_started;
+    std::atomic_bool m_server_destructing_allowed;
+    std::function<void(Connection&)> m_on_connect = nullptr;
+    
+    int m_lastly_used_connection = 0;
 public:
     Server();
     ~Server();
 
     void host(const char* = DEFAULT_PORT);
 
-    Connection& awaitNewConnection(int = DEFAULT_TIMEOUT, std::function<void(Connection&)> = nullptr);
+    Connection& awaitNewConnection(std::function<void(Connection&)> = nullptr);
 
     int getPort();
     
@@ -49,12 +56,18 @@ public:
     void sendMessage(const char* = "", const int = 0) const;
     void sendMessage(std::string = "", const int = 0) const;
     void sendMessage(Message&, const int = 0) const;
+    void sendMessage(Message&, const Connection& connection) const;
 
     std::unique_ptr<Responce> recieveMessageFrom(const int = 0);
+    std::unique_ptr<Responce> recieveMessageFrom(const Connection&);
 
     void respond(const char* = "") const;
     void respond(std::string = "") const;
     void respond(Message&) const;
+
+    void startConnectionHandling(std::function<void(Connection&)> = nullptr);
+    void stopConnectionHandling();
+    void setConnectionHandler(std::function<void(Connection&)> = nullptr);
 
     operator int();
     Server& operator=(const Server& other);

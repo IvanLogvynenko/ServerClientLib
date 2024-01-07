@@ -19,7 +19,7 @@ add_compile_definitions(BUFFER_SIZE=50)
 # main usage is in poll()s
 # if the value is -1 then it would wait until something happens
 # You'd better use functions that allow to state timeout and leave this value as it is
-add_compile_definitions(DEFAULT_TIMEOUT=-1)
+add_compile_definitions(DEFAULT_TIMEOUT=500)
 
 add_executable(server
     src/server_main.cpp
