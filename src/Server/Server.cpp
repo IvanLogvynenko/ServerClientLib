@@ -3,7 +3,7 @@
 Server::Server(
     bool if_message_must_be_stored, 
     std::function<void(Connection&)> on_connect, 
-    std::function<void(Message&)> on_message_income,
+    std::function<void(Responce&)> on_message_income,
     int socket_fd, 
     std::string port
 ) :
@@ -17,7 +17,6 @@ Server::Server(
     if (!port.empty())
         this->m_socket_fd = this->host(port);
     m_server_destructing_allowed.store(false);
-    
 }
 
 Server::~Server() {
@@ -139,7 +138,6 @@ std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connectio
         EL("Failed to recieve data from " << connection);
         throw std::runtime_error("Failed to recieve data");
     }
-    // LOG("Acquired a message from " << connection << " with size " << data_size);
     m_lastly_used_connection = (int)connection;
     std::unique_ptr<Responce> responce = std::make_unique<Responce>(buffer, data_size);
     return responce;

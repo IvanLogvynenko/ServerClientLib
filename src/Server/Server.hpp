@@ -48,19 +48,19 @@ protected:
     std::function<void(Connection&)> m_on_connect;
 
     std::atomic_bool m_message_income_handling_started;
-    std::function<void(Message&)> m_on_message_income;
+    std::function<void(Responce&)> m_on_message_income;
     
     std::atomic_bool m_server_destructing_allowed;
 
     std::atomic_bool m_if_message_must_be_stored;
-    std::unordered_map<int, std::queue<Message>&> m_message_storage;
+    std::unordered_map<int, std::queue<Responce>&> m_message_storage;
 public:
     Server( 
         bool = false, 
         std::function<void(Connection&)> = nullptr, 
-        std::function<void(Message&)> = nullptr,
+        std::function<void(Responce&)> = nullptr,
         int = -1, 
-        std::string = ""
+        std::string = std::string()
     );
     Server(Server&);
     ~Server();
