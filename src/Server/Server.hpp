@@ -1,10 +1,14 @@
 #pragma once
 #include <string>
+
 #include <vector>
 #include <array>
+#include <unordered_map>
+#include <queue>
 
 #include <functional>
 #include <memory>
+
 #include <thread>
 #include <atomic>
 #include <mutex>
@@ -32,26 +36,40 @@
 class Server
 {
 protected:
-    int m_port;
     int m_socket_fd;
-    std::vector<std::shared_ptr<Connection>> m_connections = std::vector<std::shared_ptr<Connection>>(0);
-    std::mutex m_connections_mutex;
-    std::atomic_bool m_connection_handling_started;
-    std::atomic_bool m_server_destructing_allowed;
-    std::function<void(Connection&)> m_on_connect = nullptr;
+    std::string m_port;
 
-    std::function<void(Message&)> m_on_message_income = nullptr;
-    
+    std::mutex m_connections_mutex;
+    std::vector<std::shared_ptr<Connection>> m_connections = std::vector<std::shared_ptr<Connection>>(0);
+
     int m_lastly_used_connection = 0;
+
+    std::atomic_bool m_connection_handling_started;
+    std::function<void(Connection&)> m_on_connect;
+
+    std::atomic_bool m_message_income_handling_started;
+    std::function<void(Message&)> m_on_message_income;
+    
+    std::atomic_bool m_server_destructing_allowed;
+
+    std::atomic_bool m_if_message_must_be_stored;
+    std::unordered_map<int, std::queue<Message>&> m_message_storage;
 public:
-    Server();
+    Server( 
+        bool = false, 
+        std::function<void(Connection&)> = nullptr, 
+        std::function<void(Message&)> = nullptr,
+        int = -1, 
+        std::string = ""
+    );
+    Server(Server&);
     ~Server();
 
-    void host(const char* = DEFAULT_PORT);
+    int host(std::string = DEFAULT_PORT);
 
     Connection& awaitNewConnection(std::function<void(Connection&)> = nullptr);
 
-    int getPort();
+    std::string getPort();
     
     std::vector<std::shared_ptr<Connection>> getConnections();
 
@@ -70,11 +88,11 @@ public:
     void startConnectionHandling(std::function<void(Connection&)> = nullptr);
     void stopConnectionHandling();
 
-    void startMessageIncomeHandling(std::function<void(Message&)> = nullptr, bool = false);
+    void startMessageIncomeHandling(std::function<void(Message&)> = nullptr);
     void stopMessageIncomeHandling();
 
-    void startSendingMessage(Message&, int = DEFAULT_TIMEOUT);
-
     operator int();
+    Connection& operator[](size_t);
+    std::vector<Message>& operator[](Connection&);
     Server& operator=(const Server& other);
 };

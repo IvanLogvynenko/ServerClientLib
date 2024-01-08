@@ -11,17 +11,14 @@ class Connection
 private:
     static u_int8_t id;
 protected:
-    Connection(u_int8_t, int, int, bool);
-
-    bool isEmpty;
     u_int8_t ID;
     int m_socket_fd;
     int m_port;
+    bool isEmpty;
 
 public:
-    Connection();
-    Connection(int, int);
-    Connection(const Connection&);
+    Connection(int = -1, int = -1);
+    Connection(const Connection&) = delete;
     ~Connection();
 
     const static Connection empty;

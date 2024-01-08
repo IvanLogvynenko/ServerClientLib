@@ -16,7 +16,7 @@ Client &Client::operator=(const Client &other)
         this->m_socket_fd = other.m_socket_fd;
         if (m_connection != other.m_connection) {
             delete m_connection;
-            this->m_connection = new Connection(*(other.m_connection));
+            this->m_connection = other.m_connection;
         }
     }
     return *this;
@@ -85,7 +85,7 @@ void Client::disconnect()
     this->m_socket_fd = -1;
     if (!this->m_connection->ifEmpty())
         delete this->m_connection;
-    this->m_connection = new Connection(Connection::empty);
+    this->m_connection = new Connection();
     LOG("Disconnected");
 }
 

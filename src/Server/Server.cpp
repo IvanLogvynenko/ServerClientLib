@@ -1,19 +1,32 @@
 #include "Server.hpp"
 
-Server::Server() :
-    m_port(-1),
-    m_socket_fd(-1)
+Server::Server(
+    bool if_message_must_be_stored, 
+    std::function<void(Connection&)> on_connect, 
+    std::function<void(Message&)> on_message_income,
+    int socket_fd, 
+    std::string port
+) :
+    m_socket_fd(socket_fd),
+    m_port(port),
+    m_on_connect(on_connect),
+    m_on_message_income(on_message_income),
+    m_if_message_must_be_stored(if_message_must_be_stored),
+    m_message_storage(0)
 {
+    if (!port.empty())
+        this->m_socket_fd = this->host(port);
     m_server_destructing_allowed.store(false);
+    
 }
+
 Server::~Server() {
     while (!m_server_destructing_allowed.load());
     stopConnectionHandling();
     close(this->m_socket_fd);
 }
 
-
-void Server::host(const char *port)
+int Server::host(std::string port)
 {
     int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (socket_fd == -1) {
@@ -23,7 +36,7 @@ void Server::host(const char *port)
 
     struct sockaddr_in socketAddr;
     socketAddr.sin_family = AF_INET;
-    socketAddr.sin_port = htons((uint16_t)atoi(port));
+    socketAddr.sin_port = htons((uint16_t)stoi(port));
     socketAddr.sin_addr.s_addr = INADDR_ANY;
 
     int yes = 1;
@@ -39,8 +52,9 @@ void Server::host(const char *port)
         throw std::runtime_error("Failed to set socket to listening state");
     }
 
-    this->m_port = atoi(port);
+    this->m_port = port;
     this->m_socket_fd = socket_fd;
+    return this->m_socket_fd;
 }
 Connection & Server::awaitNewConnection(std::function<void(Connection&)> on_connect)
 {
@@ -56,7 +70,7 @@ Connection & Server::awaitNewConnection(std::function<void(Connection&)> on_conn
 
     LOG("New connection accepted " << new_fd);
 
-    std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, this->m_port);
+    std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, stoi(this->m_port));
 
     if (on_connect != nullptr) 
         this->m_on_connect = on_connect;
@@ -131,7 +145,7 @@ std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connectio
     return responce;
 }
 
-int Server::getPort()
+std::string Server::getPort()
 {
     return this->m_port;
 }
@@ -156,6 +170,17 @@ Server &Server::operator=(const Server &other)
     }
     return *this;
 }
+Connection& Server::operator[](size_t index)
+{
+    if (index >= this->m_connections.size()) {
+        throw std::runtime_error("Invalid index");
+    }
+    return *this->m_connections[index];
+}
+std::vector<Message>& Server::operator[](Connection &)
+{   
+    throw std::runtime_error("unimplemented method");
+}
 
 void Server::startConnectionHandling(std::function<void(Connection &)> on_connect)
 {
@@ -179,7 +204,7 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
 
                 ILOG("New connection accepted " << new_fd);
 
-                std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, this->m_port);
+                std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, stoi(this->m_port));
 
                 if (on_connect != nullptr) 
                     this->m_on_connect = on_connect;
@@ -200,15 +225,12 @@ void Server::stopConnectionHandling()
     this->m_connection_handling_started.store(false);
 }
 
-void Server::startMessageIncomeHandling(std::function<void(Message&)>on_recieve, bool store_message)
+void Server::startMessageIncomeHandling(std::function<void(Message&)>on_recieve)
 {
-    
+    Message message = Message();
+    on_recieve(message);
 }
 void Server::stopMessageIncomeHandling()
 {
-}
 
-void Server::startSendingMessage(Message& message, int delay)
-{
-    
 }
