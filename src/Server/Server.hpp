@@ -53,6 +53,8 @@ protected:
     std::atomic_bool m_server_destructing_allowed;
 
     std::atomic_bool m_if_message_must_be_stored;
+    
+    std::mutex m_message_storage_mutex;
     std::unordered_map<int, std::queue<Responce>&> m_message_storage;
 public:
     Server( 
@@ -88,11 +90,18 @@ public:
     void startConnectionHandling(std::function<void(Connection&)> = nullptr);
     void stopConnectionHandling();
 
-    void startMessageIncomeHandling(std::function<void(Message&)> = nullptr);
+    void startMessageIncomeHandling(std::function<void(Responce&)> = nullptr);
     void stopMessageIncomeHandling();
+
+    void startSavingMessages();
+    void stopSavingMessages();
 
     operator int();
     Connection& operator[](size_t);
     std::vector<Message>& operator[](Connection&);
+
+    operator std::vector<pollfd>();
+    size_t getAmountOfConnections();
+
     Server& operator=(const Server& other);
 };

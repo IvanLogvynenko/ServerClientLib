@@ -124,6 +124,7 @@ void Server::sendMessage(Message &message, const Connection & connection) const
         EL("Message sending failed");
         throw std::runtime_error("Message sending error");
     }
+
 }
 
 std::unique_ptr<Responce> Server::recieveMessageFrom(size_t index)
@@ -140,6 +141,10 @@ std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connectio
     }
     m_lastly_used_connection = (int)connection;
     std::unique_ptr<Responce> responce = std::make_unique<Responce>(buffer, data_size);
+
+    if (this->m_if_message_must_be_stored.load())
+        this->m_message_storage[(int)connection].push(*responce);
+
     return responce;
 }
 
@@ -179,6 +184,17 @@ std::vector<Message>& Server::operator[](Connection &)
 {   
     throw std::runtime_error("unimplemented method");
 }
+Server::operator std::vector<pollfd>()
+{
+    std::vector<pollfd> result;
+    for (auto &connection : this->m_connections)
+        result.push_back(*connection);
+    return result;
+}
+size_t Server::getAmountOfConnections()
+{
+    return this->m_connections.size();
+}
 
 void Server::startConnectionHandling(std::function<void(Connection &)> on_connect)
 {
@@ -194,7 +210,7 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
             struct sockaddr remoteaddr;
             socklen_t addrlen = sizeof(remoteaddr);
 
-            while (poll(&data, 1, CONNECTION_HANDLING_TIMEOUT) > 0) {
+            while (poll(&data, 1, HANDLING_TIMEOUT) > 0) {
                 int new_fd = 0;
                 if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
                     EL("Failed to accept new connection");
@@ -223,12 +239,45 @@ void Server::stopConnectionHandling()
     this->m_connection_handling_started.store(false);
 }
 
-void Server::startMessageIncomeHandling(std::function<void(Message&)>on_recieve)
+void Server::startMessageIncomeHandling(std::function<void(Responce&)> on_recieve)
 {
-    Message message = Message();
-    on_recieve(message);
+    if (this->m_message_income_handling_started.load())
+        return;
+
+    LOG("Now all incomming messages would be handled");
+    this->m_message_income_handling_started.store(true);
+    std::thread message_handler([&] (std::function<void(Responce&)> on_income, Server* server) {
+        std::vector<pollfd> connections = *server;
+
+        while (this->m_connection_handling_started.load()) {
+            const std::lock_guard<std::mutex> lock(server->m_message_storage_mutex);
+
+            if (poll(connections.data(), connections.size(), HANDLING_TIMEOUT) != -1)
+                for (size_t i = 0; i < connections.size(); i++)
+                if (connections[i].revents == POLLIN) {
+                    std::unique_ptr<Responce> responce = server->recieveMessageFrom(i);
+
+                    if (on_income != nullptr)
+                        server->m_on_message_income = on_income;
+                    if (server->m_on_message_income != nullptr) 
+                        server->m_on_message_income(*responce);
+                }
+        }
+    }, on_recieve, this);
+    message_handler.detach();
 }
 void Server::stopMessageIncomeHandling()
 {
+    LOG("Stopping incoming messages handling");
+    this->m_message_income_handling_started.store(false);
+}
 
+void Server::startSavingMessages()
+{
+    this->m_if_message_must_be_stored.store(true);
+}
+
+void Server::stopSavingMessages()
+{
+    this->m_if_message_must_be_stored.store(false);
 }

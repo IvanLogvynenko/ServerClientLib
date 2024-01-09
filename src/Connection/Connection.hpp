@@ -18,7 +18,6 @@ protected:
 
 public:
     Connection(int = -1, int = -1);
-    Connection(const Connection&) = delete;
     ~Connection();
 
     const static Connection empty;
