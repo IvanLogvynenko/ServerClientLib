@@ -44,3 +44,4 @@ add_library(ServerClientLib
     src/Message/Message.cpp
     src/Responce/Responce.cpp    
 )
+install(TARGETS ServerClientLib DESTINATION lib)
