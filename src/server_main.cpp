@@ -22,13 +22,7 @@ int main(const int argv, const char** argc) {
     
     LOG("Hosted on a port " << server.getPort());
     LOG("Server socket fd is " << (int)server);
-
-    auto on_connect = [&](Connection& connection){
-        server.respond(*server.recieveMessageFrom(connection));
-    };
-
-    server.awaitNewConnection(on_connect);
-    server.startConnectionHandling(on_connect);
-
+    server.awaitNewConnection();
+    server.respond(*server.recieveMessageFrom());
     ILOG("End");
 }

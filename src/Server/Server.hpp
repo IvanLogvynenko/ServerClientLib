@@ -46,21 +46,16 @@ protected:
 
     std::atomic_bool m_connection_handling_started;
     std::function<void(Connection&)> m_on_connect;
-
-    std::atomic_bool m_message_income_handling_started;
-    std::function<void(Responce&)> m_on_message_income;
     
     std::atomic_bool m_server_destructing_allowed;
 
     std::atomic_bool m_if_message_must_be_stored;
     
-    std::mutex m_message_storage_mutex;
-    std::unordered_map<int, std::queue<Responce>&> m_message_storage;
+    std::unordered_map<int, std::queue<Responce>> m_message_storage;
 public:
     Server( 
         bool = false, 
         std::function<void(Connection&)> = nullptr, 
-        std::function<void(Responce&)> = nullptr,
         int = -1, 
         std::string = std::string()
     );
@@ -90,15 +85,12 @@ public:
     void startConnectionHandling(std::function<void(Connection&)> = nullptr);
     void stopConnectionHandling();
 
-    void startMessageIncomeHandling(std::function<void(Responce&)> = nullptr);
-    void stopMessageIncomeHandling();
-
     void startSavingMessages();
     void stopSavingMessages();
 
     operator int();
     Connection& operator[](size_t);
-    std::vector<Message>& operator[](Connection&);
+    std::queue<Responce> operator[](Connection&);
 
     operator std::vector<pollfd>();
     size_t getAmountOfConnections();

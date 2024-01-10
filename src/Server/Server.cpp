@@ -3,20 +3,18 @@
 Server::Server(
     bool if_message_must_be_stored, 
     std::function<void(Connection&)> on_connect, 
-    std::function<void(Responce&)> on_message_income,
     int socket_fd, 
     std::string port
 ) :
     m_socket_fd(socket_fd),
     m_port(port),
     m_on_connect(on_connect),
-    m_on_message_income(on_message_income),
     m_if_message_must_be_stored(if_message_must_be_stored),
     m_message_storage(0)
 {
     if (!port.empty())
         this->m_socket_fd = this->host(port);
-    m_server_destructing_allowed.store(false);
+    m_server_destructing_allowed.store(true);
 }
 
 Server::~Server() {
@@ -140,8 +138,8 @@ std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connectio
         throw std::runtime_error("Failed to recieve data");
     }
     m_lastly_used_connection = (int)connection;
+    LOG("Recieved message from " << connection);
     std::unique_ptr<Responce> responce = std::make_unique<Responce>(buffer, data_size);
-
     if (this->m_if_message_must_be_stored.load())
         this->m_message_storage[(int)connection].push(*responce);
 
@@ -180,9 +178,11 @@ Connection& Server::operator[](size_t index)
     }
     return *this->m_connections[index];
 }
-std::vector<Message>& Server::operator[](Connection &)
+std::queue<Responce> Server::operator[](Connection& connection)
 {   
-    throw std::runtime_error("unimplemented method");
+    if (this->m_message_storage.contains((int)connection))
+        return this->m_message_storage[connection];
+    throw std::runtime_error("No such connection");
 }
 Server::operator std::vector<pollfd>()
 {
@@ -203,6 +203,7 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
 
     LOG("Now all incomming connections would be handled");
     this->m_connection_handling_started.store(true);
+    this->m_server_destructing_allowed.store(false);
     std::thread connection_handler([&] (std::function<void(Connection&)> on_connect) {
         pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };
         while (this->m_connection_handling_started.load()) {
@@ -239,44 +240,10 @@ void Server::stopConnectionHandling()
     this->m_connection_handling_started.store(false);
 }
 
-void Server::startMessageIncomeHandling(std::function<void(Responce&)> on_recieve)
-{
-    if (this->m_message_income_handling_started.load())
-        return;
-
-    LOG("Now all incomming messages would be handled");
-    this->m_message_income_handling_started.store(true);
-    std::thread message_handler([&] (std::function<void(Responce&)> on_income, Server* server) {
-        std::vector<pollfd> connections = *server;
-
-        while (this->m_connection_handling_started.load()) {
-            const std::lock_guard<std::mutex> lock(server->m_message_storage_mutex);
-
-            if (poll(connections.data(), connections.size(), HANDLING_TIMEOUT) != -1)
-                for (size_t i = 0; i < connections.size(); i++)
-                if (connections[i].revents == POLLIN) {
-                    std::unique_ptr<Responce> responce = server->recieveMessageFrom(i);
-
-                    if (on_income != nullptr)
-                        server->m_on_message_income = on_income;
-                    if (server->m_on_message_income != nullptr) 
-                        server->m_on_message_income(*responce);
-                }
-        }
-    }, on_recieve, this);
-    message_handler.detach();
-}
-void Server::stopMessageIncomeHandling()
-{
-    LOG("Stopping incoming messages handling");
-    this->m_message_income_handling_started.store(false);
-}
-
 void Server::startSavingMessages()
 {
     this->m_if_message_must_be_stored.store(true);
 }
-
 void Server::stopSavingMessages()
 {
     this->m_if_message_must_be_stored.store(false);
