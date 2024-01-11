@@ -1,6 +1,10 @@
 #pragma once
 #include <string>
 
+#ifndef DEFAULT_MESSAGE
+    #define DEFAULT_MESSAGE ""
+#endif // !DEFAULT_MESSAGE
+
 class Message
 {
 protected:

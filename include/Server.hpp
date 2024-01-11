@@ -33,6 +33,10 @@
     #define BUFFER_SIZE 100
 #endif // !BUFFER_SIZE
 
+#ifndef DEFAULT_PORT
+    #define DEFAULT_PORT "37373"
+#endif // !DEFAULT_PORT
+
 class Server
 {
 protected:
