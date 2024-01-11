@@ -2,7 +2,7 @@
 #include <string>
 #include <array>
 
-#include "../Message/Message.hpp"
+#include "Message.hpp"
 
 #ifndef BUFFER_SIZE
     #define BUFFER_SIZE 100

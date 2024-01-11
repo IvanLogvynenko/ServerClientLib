@@ -8,12 +8,12 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "debugKit/basic.hpp"
+#include "basic.hpp"
 
-#include "Connection/Connection.hpp"
+#include "Connection.hpp"
 
-#include "Message/Message.hpp"
-#include "Responce/Responce.hpp"
+#include "Message.hpp"
+#include "Responce.hpp"
 
 #ifndef BUFFER_SIZE
     #define BUFFER_SIZE 100

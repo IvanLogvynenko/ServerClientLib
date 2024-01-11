@@ -18,12 +18,12 @@
 #include <unistd.h>
 #include <poll.h>
 
-#include "debugKit/basic.hpp"
+#include "basic.hpp"
 
-#include "Connection/Connection.hpp"
+#include "Connection.hpp"
 
-#include "Message/Message.hpp"
-#include "Responce/Responce.hpp"
+#include "Message.hpp"
+#include "Responce.hpp"
 
 #ifndef LISTEN_BACKLOG
     #define LISTEN_BACKLOG 20

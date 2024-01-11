@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <poll.h>
 
-#include "debugKit/basic.hpp"
+#include "basic.hpp"
 
 class Connection
 {
