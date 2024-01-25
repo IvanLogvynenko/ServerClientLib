@@ -2,7 +2,7 @@ include(FetchContent)
 FetchContent_Declare(
         ServerClientLib
         GIT_REPOSITORY https://github.com/IvanLogvynenko/ServerClientLib
-        GIT_TAG 83fe4589dc1640687ab4580be2ad085ac01fcd2c #refs/tags/v0.1.1
+        GIT_TAG 4914ec25b88f2320e7cb85b49db95734fcaa2014 #refs/tags/v0.1.1
 )
 FetchContent_MakeAvailable(ServerClientLib)
 target_compile_options(ServerClientLib PRIVATE -w)
