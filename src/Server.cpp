@@ -125,11 +125,13 @@ void Server::sendMessage(Message &message, const Connection & connection) const
 
 }
 
-std::unique_ptr<Responce> Server::recieveMessageFrom(size_t index)
+template <typename DataType>
+std::unique_ptr<DataType> Server::recieveMessageFrom(size_t index)
 {
     return recieveMessageFrom(*(this->m_connections[index]));
 }
-std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connection)
+template <typename DataType>
+std::unique_ptr<DataType> Server::recieveMessageFrom(const Connection &connection)
 {
     std::array<char, BUFFER_SIZE> buffer;
     int data_size = 0;
@@ -139,7 +141,7 @@ std::unique_ptr<Responce> Server::recieveMessageFrom(const Connection &connectio
     }
     m_lastly_used_connection = (int)connection;
     LOG("Recieved message from " << connection);
-    std::unique_ptr<Responce> responce = std::make_unique<Responce>(buffer, data_size);
+    std::unique_ptr<Responce> responce = std::make_unique<DataType>(buffer, data_size);
     if (this->m_if_message_must_be_stored.load())
         this->m_message_storage[(int)connection].push(*responce);
 

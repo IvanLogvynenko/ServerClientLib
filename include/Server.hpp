@@ -79,8 +79,10 @@ public:
     void sendMessage(Message&, size_t = 0) const;
     void sendMessage(Message&, const Connection& connection) const;
 
-    std::unique_ptr<Responce> recieveMessageFrom(size_t = 0);
-    std::unique_ptr<Responce> recieveMessageFrom(const Connection&);
+    template <typename DataType = Responce>
+    std::unique_ptr<DataType> recieveMessageFrom(size_t = 0);
+    template <typename DataType = Responce>
+    std::unique_ptr<DataType> recieveMessageFrom(const Connection&);
 
     void respond(const char* = "") const;
     void respond(std::string = "") const;
