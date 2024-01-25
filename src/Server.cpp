@@ -198,7 +198,7 @@ size_t Server::getAmountOfConnections()
     return this->m_connections.size();
 }
 
-void Server::startConnectionHandling(std::function<void(Connection &)> on_connect)
+void Server::startConnectionHandling(std::function<void(Connection &)> on_connect, bool forever)
 {
     if (this->m_connection_handling_started.load())
         return;
@@ -208,7 +208,7 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
     this->m_server_destructing_allowed.store(false);
     std::thread connection_handler([&] (std::function<void(Connection&)> on_connect) {
         pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };
-        while (this->m_connection_handling_started.load()) {
+        while (forever || this->m_connection_handling_started.load()) {
             const std::lock_guard<std::mutex> lock(m_connections_mutex);
             struct sockaddr remoteaddr;
             socklen_t addrlen = sizeof(remoteaddr);

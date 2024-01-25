@@ -88,7 +88,7 @@ public:
     void respond(std::string = "") const;
     void respond(Message&) const;
 
-    void startConnectionHandling(std::function<void(Connection&)> = nullptr);
+    void startConnectionHandling(std::function<void(Connection&)> = nullptr, bool = false);
     void stopConnectionHandling();
 
     void startSavingMessages();
