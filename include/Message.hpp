@@ -15,6 +15,6 @@ public:
 
     size_t size();
 
-    operator std::string();
+    virtual operator std::string();
     operator const char*();
 };
