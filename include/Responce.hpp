@@ -15,6 +15,4 @@ public:
     Responce(std::string data);
     Responce(std::array<char, BUFFER_SIZE> data, size_t length);
     ~Responce();
-
-    operator std::string();
 };

@@ -11,10 +11,10 @@ protected:
     std::string m_data;
 public:
     Message(std::string = DEFAULT_MESSAGE);
-    ~Message();
+    virtual ~Message();
 
-    size_t size();
+    virtual size_t size();
 
     virtual operator std::string();
-    operator const char*();
+    virtual operator const char*();
 };
