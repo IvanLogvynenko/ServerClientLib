@@ -22,9 +22,6 @@
 
 #include "Connection.hpp"
 
-#include "Message.hpp"
-#include "Responce.hpp"
-
 #ifndef LISTEN_BACKLOG
     #define LISTEN_BACKLOG 20
 #endif // !LISTEN_BACKLOG
@@ -52,13 +49,8 @@ protected:
     std::function<void(Connection&)> m_on_connect;
     
     std::atomic_bool m_server_destructing_allowed;
-
-    std::atomic_bool m_if_message_must_be_stored;
-    
-    std::unordered_map<int, std::queue<Responce>> m_message_storage;
 public:
-    Server( 
-        bool = false, 
+    Server(
         std::function<void(Connection&)> = nullptr, 
         int = -1, 
         std::string = std::string()
@@ -76,27 +68,22 @@ public:
 
     void sendMessage(const char* = "", size_t = 0) const;
     void sendMessage(std::string = "", size_t = 0) const;
-    void sendMessage(Message&, size_t = 0) const;
-    void sendMessage(Message&, const Connection& connection) const;
+    void sendMessage(std::string, const Connection& connection) const;
 
-    std::unique_ptr<Responce> recieveMessageFrom(size_t = 0);
-    std::unique_ptr<Responce> recieveMessageFrom(const Connection&);
+    std::string recieveMessageFrom(size_t = 0);
+
+    std::string recieveMessageFrom(const Connection&);
 
     void respond(const char* = "") const;
     void respond(std::string = "") const;
-    void respond(Message&) const;
 
     void startConnectionHandling(std::function<void(Connection&)> = nullptr, bool = false);
     void stopConnectionHandling();
 
-    void startSavingMessages();
-    void stopSavingMessages();
-
     operator int();
-    Connection& operator[](size_t);
-    std::queue<Responce> operator[](Connection&);
 
-    operator std::vector<pollfd>();
+    Connection& operator[](size_t);
+
     size_t getAmountOfConnections();
 
     Server& operator=(const Server& other);
