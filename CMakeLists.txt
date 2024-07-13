@@ -19,11 +19,12 @@ add_library(ServerClientLib
     src/Server.cpp
     src/Client.cpp
     src/Connection.cpp
-    src/Message.cpp
-    src/Responce.cpp    
 )
 target_link_libraries(ServerClientLib PUBLIC debugKit)
-target_include_directories(ServerClientLib PUBLIC include)
+target_include_directories(ServerClientLib PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 set_target_properties(ServerClientLib PROPERTIES
     VERSION ${SERVER_CLIENT_LIB_VERSION_MAJOR}.${SERVER_CLIENT_LIB_VERSION_MINOR}
     SOVERSION 1
@@ -36,6 +37,10 @@ install(TARGETS ServerClientLib
     RUNTIME DESTINATION bin
 )
 
-install(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/generate_install_manifest.cmake")
 install(DIRECTORY include/ DESTINATION include)
 
+install(EXPORT ServerClientLibConfig
+    FILE ServerClientLibConfig.cmake
+    NAMESPACE ServerClientLib::
+    DESTINATION lib/cmake/ServerClientLib
+)

@@ -12,18 +12,22 @@
 
 #include "Connection.hpp"
 
-#include "Message.hpp"
-#include "Responce.hpp"
-
 #ifndef BUFFER_SIZE
     #define BUFFER_SIZE 100
 #endif // !BUFFER_SIZE
 
+#ifndef DEFAULT_PORT
+    #define DEFAULT_PORT "37373"
+#endif // !DEFAULT_PORT
+
+#ifndef MAX_CONNECTION_ATTEMPTS
+    #define MAX_CONNECTION_ATTEMPTS 50
+#endif // !MAX_CONNECTION_ATTEMPTS
+
 class Client
 {
 protected:
-    int m_socket_fd;
-    Connection* m_connection;
+    Connection m_connection;
 
     static int openSocket(struct addrinfo* res);
 public:
@@ -33,13 +37,12 @@ public:
     Connection& connectTo(const char* = "127.0.0.1", const char* = DEFAULT_PORT);
 
     void disconnect();
-    bool checkIfConnected()const ;
+    bool checkIfConnected() const;
 
-    void sendMessage(const char* = DEFAULT_MESSAGE) const;
-    void sendMessage(std::string = DEFAULT_MESSAGE) const;
-    void sendMessage(Message&) const;
+    void sendMessage(const char*) const;
+    void sendMessage(std::string) const;
 
-    std::unique_ptr<Responce> recieveMessage() const;
+    std::string recieveMessage() const;
 
     operator int() const;
     Client& operator=(const Client& other);

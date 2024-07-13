@@ -1,13 +1,15 @@
-#include "Server.hpp"
+#include "include/Server.hpp"
 
 Server::Server(
+	std::string port,
 	std::function<void(Connection&)> on_connect, 
-	int socket_fd, 
-	std::string port
+	std::function<void(std::string&, Connection&)> on_recieve, 
+	int socket_fd
 ) :
 	m_socket_fd(socket_fd),
 	m_port(port),
-	m_on_connect(on_connect)
+	m_on_connect(on_connect),
+	m_on_recieve(on_recieve)
 {
 	if (!port.empty())
 		this->m_socket_fd = this->host(port);
@@ -116,11 +118,7 @@ void Server::sendMessage(std::string data, size_t index) const
 }
 void Server::sendMessage(std::string data, const Connection & connection) const
 {
-	LOG("Sending message: " << data);
-	if (send(connection, (data.append("<END>")).c_str(), data.length(), 0) == -1) {
-		EL("Message sending failed");
-		throw std::runtime_error("Message sending error");
-	}
+	connection << data;
 }
 
 std::string Server::recieveMessageFrom(size_t index)
@@ -129,27 +127,8 @@ std::string Server::recieveMessageFrom(size_t index)
 }
 std::string Server::recieveMessageFrom(const Connection &connection)
 {
-	std::array<char, BUFFER_SIZE> buffer;
-	int data_size = -1;
-	std::string result = "";
-	while (true) {
-		data_size = (int)recv(connection, buffer.data(), BUFFER_SIZE, 0); 
-		if (data_size == -1) {
-			EL("Failed to recieve data from " << connection);
-			throw std::runtime_error("Failed to recieve data");
-		}
-		std::string current(buffer.data(), data_size);
-		if (current.find("<END>") != std::string::npos) {
-			result.append(current.erase(current.find("<END>"), 5));
-            break;
-        }
-		result.append(current);
-	}
-	
-	m_lastly_used_connection = (int)connection;
-	LOG("Recieved message from " << connection);
-	LOG("Message: " << result);
-	return result;
+	m_lastly_used_connection = connection;
+	return connection.recieve();
 }
 
 std::string Server::getPort()
@@ -199,7 +178,14 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
 	this->m_connection_handling_started.store(true);
 	this->m_server_destructing_allowed.store(false);
 	std::thread connection_handler([&] (std::function<void(Connection&)> on_connect) {
-		pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };
+		pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };\
+
+		if (forever)
+			ILOG("Server will be running forever\n"
+			"This means that you would need to kill the proccess yourself\n"
+			" >>> kill -9" << getpid() << "\n"
+			"or restart your machine\n\n");
+
 		while (forever || this->m_connection_handling_started.load()) {
 			const std::lock_guard<std::mutex> lock(m_connections_mutex);
 			struct sockaddr remoteaddr;
@@ -208,7 +194,8 @@ void Server::startConnectionHandling(std::function<void(Connection &)> on_connec
 			while (poll(&data, 1, HANDLING_TIMEOUT) > 0) {
 				int new_fd = 0;
 				if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
-					EL("Failed to accept new connection");
+					EL("Failed to accept new connection\nSkipping...\n");
+					continue;
 				}
 
 				ILOG("New connection accepted " << new_fd);
@@ -232,4 +219,49 @@ void Server::stopConnectionHandling()
 {
 	LOG("Stopped new connection handling");
 	this->m_connection_handling_started.store(false);
+}
+
+void startNewConnectionHandlingThread() {
+
+}
+
+void Server::startMessageIncomeHandling(std::function<void(std::string&, Connection&)> on_recieve)
+{
+	if (this->m_message_income_handling_started.load())
+		return;
+
+	LOG("Now all incomming connections would be handled");
+	LOG("Starting threads for every existing connection");
+	
+	this->m_message_income_handling_started.store(true);
+	std::thread message_recieve_handler([&] (std::function<void(Connection&)> on_connect) {
+		pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };
+		while (this->m_connection_handling_started.load()) {
+			const std::lock_guard<std::mutex> lock(m_connections_mutex);
+			struct sockaddr remoteaddr;
+			socklen_t addrlen = sizeof(remoteaddr);
+
+			while (poll(&data, 1, HANDLING_TIMEOUT) > 0) {
+				int new_fd = 0;
+				if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
+					EL("Failed to accept new connection");
+
+				}
+
+				ILOG("New connection accepted " << new_fd);
+
+				std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, stoi(this->m_port));
+
+				if (on_connect != nullptr) 
+					this->m_on_connect = on_connect;
+
+				if (this->m_on_connect != nullptr) 
+					m_on_connect(*connection);
+
+				this->m_connections.push_back(std::move(connection));   
+			}
+			m_server_destructing_allowed.store(true);
+		}
+	}, on_recieve);
+	connection_handler.detach();
 }

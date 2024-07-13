@@ -2,9 +2,6 @@
 #include <string>
 
 #include <vector>
-#include <array>
-#include <unordered_map>
-#include <queue>
 
 #include <functional>
 #include <memory>
@@ -26,13 +23,13 @@
     #define LISTEN_BACKLOG 20
 #endif // !LISTEN_BACKLOG
 
-#ifndef BUFFER_SIZE
-    #define BUFFER_SIZE 100
-#endif // !BUFFER_SIZE
-
 #ifndef DEFAULT_PORT
     #define DEFAULT_PORT "37373"
 #endif // !DEFAULT_PORT
+
+#ifndef HANDLING_TIMEOUT
+    #define HANDLING_TIMEOUT 500
+#endif // !HANDLING_TIMEOUT
 
 class Server
 {
@@ -47,13 +44,17 @@ protected:
 
     std::atomic_bool m_connection_handling_started;
     std::function<void(Connection&)> m_on_connect;
+
+    std::atomic_bool m_message_income_handling_started;
+    std::function<void(std::string&, Connection&)> m_on_recieve;
     
     std::atomic_bool m_server_destructing_allowed;
 public:
     Server(
+        std::string = std::string(),
         std::function<void(Connection&)> = nullptr, 
-        int = -1, 
-        std::string = std::string()
+        std::function<void(std::string&, Connection&)> = nullptr, 
+        int = -1
     );
     Server(Server&);
     ~Server();
@@ -79,6 +80,9 @@ public:
 
     void startConnectionHandling(std::function<void(Connection&)> = nullptr, bool = false);
     void stopConnectionHandling();
+
+    void startMessageIncomeHandling(std::function<void(std::string&, Connection&)> = nullptr);
+    void stopMessageIncomeHandling();
 
     operator int();
 

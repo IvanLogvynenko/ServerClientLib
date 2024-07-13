@@ -21,6 +21,7 @@ Connection::Connection(int socket_fd, int port) :
 }
 
 Connection::~Connection() {
+    close(this->m_socket_fd);
     if (this->ID != 0)
         LOG("Connection " << (int)this->ID << " closed");
 }
@@ -56,12 +57,43 @@ Connection::operator int() const
 {
     return this->m_socket_fd;
 }
-Connection::operator pollfd() const
+
+const Connection &Connection::operator<<(std::string &data) const
 {
-    return (pollfd) {
-        this->m_socket_fd, 
-        POLLIN, 
-        0
-    };
+    LOG("Sending message: " << data);
+	if (send(this->m_socket_fd, (data.append("<END>")).c_str(), data.length(), 0) == -1) {
+		EL("Message sending failed");
+		throw std::runtime_error("Message sending error");
+	}
+    return *this;
 }
 
+const Connection &Connection::operator>>(std::string &data) const
+{
+    data = this->recieve();
+    return *this;
+}
+
+std::string Connection::recieve() const
+{
+    std::array<char, BUFFER_SIZE> buffer;
+	size_t data_size = 0;
+	std::string result = "";
+	while (true) {
+		data_size = (size_t)recv(this->m_socket_fd, buffer.data(), BUFFER_SIZE, 0); 
+		if (data_size == 0) {
+			EL("Failed to recieve data from " << this->m_socket_fd);
+			throw std::runtime_error("Failed to recieve data");
+		}
+		std::string current(buffer.data(), data_size);
+		if (current.find("<END>") != std::string::npos) {
+			result.append(current.erase(current.find("<END>"), 5));
+            break;
+        }
+		result.append(current);
+	}
+	
+	LOG("Recieved message from " << this->m_socket_fd);
+	LOG("Message: " << result);
+	return result;
+}
