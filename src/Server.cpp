@@ -142,13 +142,13 @@ Server Server::host(uint16_t port)
 	int yes = 1;
 	setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
-	if (!bind(socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr))) {
+	if (bind(socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr))) {
 		EL("Bind error");
 		close(socket_fd);
 		throw std::runtime_error("Caught error while binding");
 	}
 
-	if (!listen(socket_fd, LISTEN_BACKLOG)) {
+	if (listen(socket_fd, LISTEN_BACKLOG)) {
 		EL("Listen error");
 		close(socket_fd);
 		throw std::runtime_error("Failed to set socket to listening state");
