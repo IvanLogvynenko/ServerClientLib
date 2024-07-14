@@ -111,7 +111,7 @@ void Server::startEventHandler()
 		std::lock_guard<std::mutex> lock(this->m_message_income_threads_lock);
 		this->m_message_income_threads[*connection] = startNewMessageIncomeThread(connection);
 	}
-
+	delete this->m_main_thread.load();
 	})));
 }
 void Server::stopEventHandler()
