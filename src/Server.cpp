@@ -102,7 +102,7 @@ void Server::startEventHandler()
 		}
 
 		Connection* connection = this->awaitNewConnection();
-		if (!connection->isEmpty()) 
+		if (connection->isEmpty()) 
 			delete connection;
 		
 		if (!this->m_handle_message_income)
@@ -166,15 +166,13 @@ Connection *Server::awaitNewConnection(std::function<Connection *(Connection *)>
 	pollfd data = (pollfd) { this->m_socket, POLLIN, 0 };
 	int poll_res = poll(&data, 1, HANDLING_TIMEOUT);
 
-	Connection* connection = new Connection(-1);
-
 	if (poll_res == -1) {
 		EL("Error occurred while connecting. Dropping...");
-		return connection;
+		return new Connection(-1);
 	}
 	else if (poll_res == 0) {
 		LOG("Timeout. Exiting...");
-		return connection;
+		return new Connection(-1);
 	}
 	
 	int new_fd = accept(this->m_socket, nullptr, 0);
@@ -183,8 +181,7 @@ Connection *Server::awaitNewConnection(std::function<Connection *(Connection *)>
 	}
 
 	ILOG("New connection accepted");
-	delete connection;
-	connection = new Connection(new_fd);
+	Connection* connection = new Connection(new_fd);
 
 	if (on_connect)
 		this->m_on_connect = std::move(on_connect);
