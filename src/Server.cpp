@@ -102,6 +102,8 @@ void Server::startEventHandler()
 		}
 
 		Connection* connection = this->awaitNewConnection();
+		if (!connection->isEmpty()) 
+			delete connection;
 		
 		if (!this->m_handle_message_income)
 			continue;
