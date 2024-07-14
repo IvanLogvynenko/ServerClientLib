@@ -2,7 +2,7 @@ include(FetchContent)
 FetchContent_Declare(
         ServerClientLib
         GIT_REPOSITORY https://github.com/IvanLogvynenko/ServerClientLib
-        GIT_TAG master
+        GIT_TAG main
 )
 FetchContent_MakeAvailable(ServerClientLib)
 target_compile_options(ServerClientLib PRIVATE -w)
