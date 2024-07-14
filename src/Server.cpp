@@ -320,4 +320,7 @@ Server::~Server()
 	this->stopMessageIncomeHandling();
 	this->stopConnectionHandling();
 	this->stopEventHandler();
+	std::lock_guard<std::mutex> lock(this->m_connections_lock);
+	for (auto &connection : this->m_connections)
+		delete connection;
 }
