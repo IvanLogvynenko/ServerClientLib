@@ -59,7 +59,7 @@ private:
 	
 
 
-	std::atomic_bool m_thread_stop;
+	std::atomic_bool m_thread_stop, m_message_hangling_stop;
 
 	std::mutex m_main_thread_mutex;
 	std::condition_variable m_main_thread_lock;

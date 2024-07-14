@@ -47,14 +47,13 @@ Server &Server::operator=(Server &other)
     return *this;
 }
 
-
 //main thread method implementations
 std::thread* Server::startNewMessageIncomeThread(Connection* connection) {
 	return std::move( new std::thread([this, &connection] () {
 
 		pollfd data = (pollfd) { *connection, POLLIN, 0 };
 
-		while (!this->m_thread_stop.load()) {
+		while (!this->m_thread_stop.load() && !this->m_message_hangling_stop.load()) {
 			int poll_res = poll(&data, 1, HANDLING_TIMEOUT);
 			
 			std::string message;
@@ -257,16 +256,12 @@ void Server::startMessageIncomeHandling(std::function<void(std::string &, Connec
 		m_message_income_threads[*this->m_connections[i]] = 
 			startNewMessageIncomeThread(this->m_connections[i]);
 }
-
-
-
-
-
-
-
-
-
-
+void Server::stopMessageIncomeHandling()
+{
+	m_handle_message_income = false;
+	std::lock_guard<std::mutex> lock(this->m_message_income_threads_lock);
+	this->m_message_income_threads.clear();
+}
 
 // * I/O methods
 void Server::sendMessage(const char * data, size_t index) const
@@ -305,22 +300,6 @@ void Server::respond(std::string data) const
 	LOG("Sending message: " << data);
     m_lastly_used_connection << data;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // getters
 Server::operator int() const
