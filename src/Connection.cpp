@@ -5,13 +5,11 @@ const Connection Connection::empty = Connection();
 
 /// @brief Basic constructor
 /// @param socket_fd 
-/// @param port 
-Connection::Connection(int socket_fd, int port) :
-    m_socket_fd(socket_fd),
-    m_port(port)
+Connection::Connection(int socket_fd) :
+    m_socket_fd(socket_fd)
 {
-    isEmpty = socket_fd == -1 || port == -1;
-    if (isEmpty) 
+    m_isEmpty = socket_fd == -1;
+    if (m_isEmpty) 
         ID = 0;
     else {
         ID = id++; 
@@ -22,8 +20,9 @@ Connection::Connection(int socket_fd, int port) :
 
 Connection::~Connection() {
     close(this->m_socket_fd);
-    if (this->ID != 0)
+    if (this->ID != 0) {
         LOG("Connection " << (int)this->ID << " closed");
+    }
 }
 
 Connection & Connection::operator=(const Connection& other)
@@ -31,23 +30,21 @@ Connection & Connection::operator=(const Connection& other)
     if (this != &other) {
         this->ID = other.ID;
         this->m_socket_fd = other.m_socket_fd;
-        this->m_port = other.m_port;
-        this->isEmpty = other.isEmpty;
+        this->m_isEmpty = other.m_isEmpty;
     }
     return *this;
 }
 
-bool Connection::ifEmpty() const
+bool Connection::isEmpty() const
 {
-    return this->isEmpty;
+    return this->m_isEmpty;
 }
 
 // now important functions
 bool Connection::checkValidity() const
 {
     return this->m_socket_fd != -1 
-        && this->m_port != -1 
-        && !this->isEmpty;
+        && !this->m_isEmpty;
 }
 u_int8_t Connection::getID() const
 {

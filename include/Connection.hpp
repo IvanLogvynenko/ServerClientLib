@@ -23,16 +23,15 @@ private:
 protected:
     uint8_t ID;
     int m_socket_fd;
-    int m_port;
-    bool isEmpty;
+    bool m_isEmpty;
 
 public:
-    Connection(int = -1, int = -1);
+    Connection(int = -1);
     ~Connection();
 
     const static Connection empty;
 
-    bool ifEmpty() const;
+    bool isEmpty() const;
     bool checkValidity() const;
 
     u_int8_t getID() const;

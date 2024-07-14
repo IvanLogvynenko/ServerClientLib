@@ -1,4 +1,10 @@
-build/
-temp/
-logs/
 .vscode/
+
+logs/
+temp/
+tmp/
+
+*.tmp
+*.temp
+
+build*/

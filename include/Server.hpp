@@ -1,94 +1,123 @@
-#pragma once
-#include <string>
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
+#ifndef LISTEN_BACKLOG
+	#define LISTEN_BACKLOG 20
+#endif // !LISTEN_BACKLOG
+
+#ifndef DEFAULT_PORT
+	#define DEFAULT_PORT 37373
+#endif // !DEFAULT_PORT
+
+#ifndef HANDLING_TIMEOUT
+	#define HANDLING_TIMEOUT 500
+#endif // !HANDLING_TIMEOUT
+
+//data structure for storing client information
 #include <vector>
+#include <string>
+#include <algorithm>
 
-#include <functional>
-#include <memory>
-
-#include <thread>
-#include <atomic>
-#include <mutex>
-
+//network related includes
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <poll.h>
 
+//asyncrounous related includes
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+
+//allowing callbacks
+#include <functional>
+#include <unordered_map>
+
+//enabling logging
 #include "basic.hpp"
 
+//class for managing client connections
 #include "Connection.hpp"
-
-#ifndef LISTEN_BACKLOG
-    #define LISTEN_BACKLOG 20
-#endif // !LISTEN_BACKLOG
-
-#ifndef DEFAULT_PORT
-    #define DEFAULT_PORT "37373"
-#endif // !DEFAULT_PORT
-
-#ifndef HANDLING_TIMEOUT
-    #define HANDLING_TIMEOUT 500
-#endif // !HANDLING_TIMEOUT
 
 class Server
 {
+private:
+	int m_socket, m_port;
+	Connection m_lastly_used_connection; // used to provide respond method
+
+	std::mutex m_connections_lock;
+	std::vector<Connection*> m_connections;
+
+
+
+	std::atomic_bool m_handle_connection;
+	std::function<Connection* (Connection*)> m_on_connect = nullptr;
+
+	std::atomic_bool m_handle_message_income;
+	std::function<void(std::string&, Connection*)> m_on_recieve = nullptr;
+	
+
+
+	std::atomic_bool m_thread_stop;
+
+	std::mutex m_main_thread_mutex;
+	std::condition_variable m_main_thread_lock;
+
+	std::atomic<std::thread*> m_main_thread;
+
+	std::mutex m_message_income_threads_lock;
+	std::unordered_map<int, std::thread*> m_message_income_threads;
 protected:
-    int m_socket_fd;
-    std::string m_port;
+	/**
+	 * methods to control "central" thread that manages threads 
+	 * for both incoming connections and messages
+	 */
+	std::thread* startNewMessageIncomeThread(Connection* connection);
 
-    std::mutex m_connections_mutex;
-    std::vector<std::shared_ptr<Connection>> m_connections = std::vector<std::shared_ptr<Connection>>(0);
+	void startEventHandler();
+	void stopEventHandler();
 
-    int m_lastly_used_connection = 0;
-
-    std::atomic_bool m_connection_handling_started;
-    std::function<void(Connection&)> m_on_connect;
-
-    std::atomic_bool m_message_income_handling_started;
-    std::function<void(std::string&, Connection&)> m_on_recieve;
-    
-    std::atomic_bool m_server_destructing_allowed;
 public:
-    Server(
-        std::string = std::string(),
-        std::function<void(Connection&)> = nullptr, 
-        std::function<void(std::string&, Connection&)> = nullptr, 
-        int = -1
-    );
-    Server(Server&);
-    ~Server();
+	Server();
+	Server(Server&);
+	Server& operator=(Server& other);
 
-    int host(std::string = DEFAULT_PORT);
+	~Server();
 
-    Connection& awaitNewConnection(std::function<void(Connection&)> = nullptr);
+	//* configuration interface
+	static Server host(uint16_t port = DEFAULT_PORT);
 
-    std::string getPort();
-    
-    std::vector<std::shared_ptr<Connection>> getConnections();
+	Connection* awaitNewConnection(std::function<Connection*(Connection*)> = nullptr);
+	std::string awaitNewMessage(Connection*, 
+							std::function<void(std::string&, Connection*)> = nullptr);
 
-    void sendMessage(const char* = "", size_t = 0) const;
-    void sendMessage(std::string = "", size_t = 0) const;
-    void sendMessage(std::string, const Connection& connection) const;
+	void startConnectionHandling(
+		std::function<Connection* (Connection*)> = nullptr
+	);
+	void stopConnectionHandling();
 
-    std::string recieveMessageFrom(size_t = 0);
+	void startMessageIncomeHandling(
+		std::function<void(std::string&, Connection*)> = nullptr
+	);
+	void stopMessageIncomeHandling();
 
-    std::string recieveMessageFrom(const Connection&);
+	//* I/O interface
+	void sendMessage(const char* = "", size_t = 0) const;
+	void sendMessage(std::string = "", size_t = 0) const;
+	void sendMessage(std::string, const Connection& connection) const;
 
-    void respond(const char* = "") const;
-    void respond(std::string = "") const;
+	std::string recieveMessageFrom(size_t = 0);
+	std::string recieveMessageFrom(const Connection&);
 
-    void startConnectionHandling(std::function<void(Connection&)> = nullptr, bool = false);
-    void stopConnectionHandling();
+	void respond(const char* = "") const;
+	void respond(std::string = "") const;
 
-    void startMessageIncomeHandling(std::function<void(std::string&, Connection&)> = nullptr);
-    void stopMessageIncomeHandling();
-
-    operator int();
-
-    Connection& operator[](size_t);
-
-    size_t getAmountOfConnections();
-
-    Server& operator=(const Server& other);
+	//* getters
+	operator int() const;
+	int getPort() const;
+	std::vector<Connection*> getConnections() const;
 };
+
+#endif // !SERVER_HPP
+

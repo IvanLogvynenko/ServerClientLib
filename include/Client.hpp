@@ -26,15 +26,17 @@
 
 class Client
 {
+private:
+    static int openSocket(struct addrinfo* res);
+    
 protected:
     Connection m_connection;
 
-    static int openSocket(struct addrinfo* res);
 public:
     Client();
     ~Client();
 
-    Connection& connectTo(const char* = "127.0.0.1", const char* = DEFAULT_PORT);
+    Connection& connectTo(const char* = "127.0.0.1", int = DEFAULT_PORT);
 
     void disconnect();
     bool checkIfConnected() const;

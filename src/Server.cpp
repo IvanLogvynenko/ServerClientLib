@@ -1,42 +1,135 @@
-#include "include/Server.hpp"
+#include "Server.hpp"
 
-Server::Server(
-	std::string port,
-	std::function<void(Connection&)> on_connect, 
-	std::function<void(std::string&, Connection&)> on_recieve, 
-	int socket_fd
-) :
-	m_socket_fd(socket_fd),
-	m_port(port),
-	m_on_connect(on_connect),
-	m_on_recieve(on_recieve)
+Server::Server() : m_socket(0), m_port(0) {}
+Server::Server(Server &other)
 {
-	if (!port.empty())
-		this->m_socket_fd = this->host(port);
-	m_server_destructing_allowed.store(true);
-}
-
-Server::Server(Server& other)
-{
-	if (this == &other) 
+    if (this == &other) 
 		return;
-	this->m_socket_fd = other.m_socket_fd;
+
+	this->m_socket = other.m_socket;
 	this->m_port = other.m_port;
+
+	//making it in the separate zone to automatically deallocate locks
+	{
+	std::lock_guard<std::mutex> lock(m_connections_lock);
+	std::lock_guard<std::mutex> other_lock(other.m_connections_lock);
 	this->m_connections.clear();
-	for (auto &connection : other.m_connections)
-		this->m_connections.push_back(connection);
+	this->m_connections = other.m_connections;
+	}
+
 	this->m_on_connect = other.m_on_connect;
-}
+    this->m_on_recieve = other.m_on_recieve;
 
-Server::~Server() {
-	while (!m_server_destructing_allowed.load());
-	stopConnectionHandling();
-	close(this->m_socket_fd);
+	this->m_message_income_threads = other.m_message_income_threads;
 }
-
-int Server::host(std::string port)
+Server &Server::operator=(Server &other)
 {
-	int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	//yeah it is copy paste. Fuck dry
+    if (this == &other) 
+		return *this;
+
+	this->m_socket = other.m_socket;
+	this->m_port = other.m_port;
+
+	//making it in the separate zone to automatically deallocate locks
+	{
+	std::lock_guard<std::mutex> lock(m_connections_lock);
+	std::lock_guard<std::mutex> other_lock(other.m_connections_lock);
+	this->m_connections.clear();
+	this->m_connections = other.m_connections;
+	}
+
+	this->m_on_connect = other.m_on_connect;
+    this->m_on_recieve = other.m_on_recieve;
+
+	this->m_message_income_threads = other.m_message_income_threads;
+
+    return *this;
+}
+
+
+//main thread method implementations
+std::thread* Server::startNewMessageIncomeThread(Connection* connection) {
+	return std::move( new std::thread([this, &connection] () {
+
+		pollfd data = (pollfd) { *connection, POLLIN, 0 };
+
+		while (!this->m_thread_stop.load()) {
+			int poll_res = poll(&data, 1, HANDLING_TIMEOUT);
+			
+			std::string message;
+			if (poll_res == -1) {
+				EL("Error occurred while recieving. Continuing...");
+				continue;
+			}
+			else if (poll_res == 0) {
+				LOG("Timeout. Continuing...");
+				m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), connection));
+				this->m_message_income_threads.erase(*connection);
+				break;
+			}
+			
+			try {
+				*connection >> message;
+			} catch (std::exception& e) {
+				//in case of any error we close a connection, 
+				//stop a thread and remove connection from list
+				m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), connection));
+				std::lock_guard<std::mutex> lock(this->m_message_income_threads_lock);
+				this->m_message_income_threads.erase(*connection);
+				break;
+			}
+
+			if (this->m_on_recieve)
+				this->m_on_recieve(message, connection);
+		}
+
+	}));
+}
+
+void Server::startEventHandler()
+{
+	if (m_main_thread.load())
+		return;
+
+	m_main_thread.store( std::move( new std::thread( [&]() {
+
+	ILOG("Starting main thread");
+
+	while(!this->m_thread_stop.load()) {
+		if (!this->m_handle_connection) {
+			std::unique_lock<std::mutex> lock(this->m_main_thread_mutex);
+			this->m_main_thread_lock.wait(lock);
+		}
+
+		Connection* connection = this->awaitNewConnection();
+		
+		if (!this->m_handle_message_income)
+			continue;
+
+		std::lock_guard<std::mutex> lock(this->m_message_income_threads_lock);
+		this->m_message_income_threads[*connection] = startNewMessageIncomeThread(connection);
+	}
+
+	})));
+}
+void Server::stopEventHandler()
+{
+	if (!m_main_thread.load())
+        return;
+
+    ILOG("Stopping main thread");
+	this->m_thread_stop.store(true);
+	m_main_thread_lock.notify_one();
+    m_main_thread.load()->join();
+    m_main_thread.store(nullptr);
+}
+
+// * configuration methods
+Server Server::host(uint16_t port)
+{
+    Server server{};
+    int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (socket_fd == -1) {
 		EL("Socket error");
 		throw std::runtime_error("Socket opening error");
@@ -44,77 +137,145 @@ int Server::host(std::string port)
 
 	struct sockaddr_in socketAddr;
 	socketAddr.sin_family = AF_INET;
-	socketAddr.sin_port = htons((uint16_t)stoi(port));
+	socketAddr.sin_port = htons(port);
 	socketAddr.sin_addr.s_addr = INADDR_ANY;
 
-	int yes = 1;
-	setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+	// int yes = 1;
+	// setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
-	if (bind(socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) == -1) {
+	if (!bind(socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr))) {
 		EL("Bind error");
-		close(this->m_socket_fd);
+		close(socket_fd);
 		throw std::runtime_error("Caught error while binding");
 	}
 
-	if (listen(socket_fd, LISTEN_BACKLOG) == -1) {
+	if (!listen(socket_fd, LISTEN_BACKLOG)) {
 		EL("Listen error");
-		close(this->m_socket_fd);
+		close(socket_fd);
 		throw std::runtime_error("Failed to set socket to listening state");
 	}
 
-	this->m_port = port;
-	this->m_socket_fd = socket_fd;
-	return this->m_socket_fd;
+	server.m_port = port;
+	server.m_socket = socket_fd;
+	return server;
 }
-Connection & Server::awaitNewConnection(std::function<void(Connection&)> on_connect)
-{
-	const std::lock_guard<std::mutex> lock(m_connections_mutex);
-	struct sockaddr remoteaddr;
-	socklen_t addrlen = sizeof(remoteaddr);
 
-	int new_fd = 0;
-	if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
-		EL("Failed to accept new connection");
-		throw std::runtime_error("Failed to accept new connection");
+Connection *Server::awaitNewConnection(std::function<Connection *(Connection *)> on_connect)
+{
+	pollfd data = (pollfd) { this->m_socket, POLLIN, 0 };
+	int poll_res = poll(&data, 1, HANDLING_TIMEOUT);
+
+	Connection* connection = new Connection(-1);
+
+	if (poll_res == -1) {
+		EL("Error occurred while connecting. Dropping...");
+		return connection;
+	}
+	else if (poll_res == 0) {
+		LOG("Timeout. Exiting...");
+		return connection;
+	}
+	
+	int new_fd = accept(this->m_socket, nullptr, 0);
+	if (!new_fd) {
+		EL("Failed to accept new connection. Skipping...");
 	}
 
-	LOG("New connection accepted " << new_fd);
+	ILOG("New connection accepted");
+	delete connection;
+	connection = new Connection(new_fd);
 
-	std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, stoi(this->m_port));
+	if (on_connect)
+		this->m_on_connect = std::move(on_connect);
 
-	if (on_connect != nullptr) 
-		this->m_on_connect = on_connect;
-	if (this->m_on_connect != nullptr) 
-		m_on_connect(*connection);
+	if (this->m_on_connect)
+		connection = this->m_on_connect(connection);
 
-	this->m_connections.push_back(std::move(connection));
-	return *(this->m_connections.at(this->m_connections.size() - 1));
+	if (!connection->isEmpty())
+		this->m_connections.push_back(connection);
+
+	LOG("Connection proccessed and added to the list if not empty");
+	return connection;
 }
-
-void Server::respond(const char * data) const
+std::string Server::awaitNewMessage(
+	Connection *connection, std::function<void(std::string &, Connection *)> on_recieve)
 {
-	respond((std::string)data);
-}
-void Server::respond(std::string data) const
-{
-	if(this->m_lastly_used_connection == 0) {
-		EL("You cannot respond since you have not received anything");
-		throw std::runtime_error("You cannot respond since you have not received anything");
+	pollfd data = (pollfd) { *connection, POLLIN, 0 };
+	int poll_res = poll(&data, 1, HANDLING_TIMEOUT);
+	
+	std::string message;
+	if (poll_res == -1) {
+		EL("Error occurred while recieving. Exiting...");
+		exit(EXIT_FAILURE);
 	}
-	LOG("Sending message: " << data);
-	if (send(this->m_lastly_used_connection, data.c_str(), data.length(), 0) == -1) {
-		EL("Message sending failed");
-		throw std::runtime_error("Message sending error");
+	else if (poll_res == 0) {
+		LOG("Timeout. Continuing...");
+		return message;
 	}
+	
+	*connection >> message;
+
+	if (on_recieve)
+		this->m_on_recieve = std::move(on_recieve);
+
+	if (this->m_on_recieve)
+		this->m_on_recieve(message, connection);
+	
+	return message;
 }
 
+void Server::startConnectionHandling(std::function<Connection* (Connection *)> on_connect)
+{
+	if (m_handle_connection)
+		return;
+
+	m_handle_connection = true;
+	m_main_thread_lock.notify_one();
+
+	if (on_connect)
+		this->m_on_connect = std::move(on_connect);
+	
+	if (!m_main_thread.load())
+		this->startEventHandler();
+}
+void Server::stopConnectionHandling()
+{
+	m_handle_connection = false;
+}
+
+void Server::startMessageIncomeHandling(std::function<void(std::string &, Connection *)>)
+{
+	if (m_handle_message_income)
+		return;
+	
+	// starting threads for incomig connections
+	m_handle_message_income = true;
+	//starting threads for existing connections
+	std::lock_guard<std::mutex> lock(this->m_message_income_threads_lock);
+
+	for(size_t i = 0; i < this->m_connections.size(); i++)
+		m_message_income_threads[*this->m_connections[i]] = 
+			startNewMessageIncomeThread(this->m_connections[i]);
+}
+
+
+
+
+
+
+
+
+
+
+
+// * I/O methods
 void Server::sendMessage(const char * data, size_t index) const
 {
-	sendMessage((std::string)data, *(this->m_connections[index]));
+	sendMessage((std::string)data, *this->m_connections[index]);
 }
 void Server::sendMessage(std::string data, size_t index) const
 {
-	sendMessage((std::string)data, *(this->m_connections[index]));
+	sendMessage((std::string)data, *this->m_connections[index]);
 }
 void Server::sendMessage(std::string data, const Connection & connection) const
 {
@@ -123,7 +284,7 @@ void Server::sendMessage(std::string data, const Connection & connection) const
 
 std::string Server::recieveMessageFrom(size_t index)
 {
-	return recieveMessageFrom(*(this->m_connections[index]));
+	return recieveMessageFrom(*this->m_connections[index]);
 }
 std::string Server::recieveMessageFrom(const Connection &connection)
 {
@@ -131,137 +292,53 @@ std::string Server::recieveMessageFrom(const Connection &connection)
 	return connection.recieve();
 }
 
-std::string Server::getPort()
+void Server::respond(const char * data) const
 {
-	return this->m_port;
+	respond((std::string)data);
 }
-std::vector<std::shared_ptr<Connection>> Server::getConnections()
+void Server::respond(std::string data) const
 {
-	return this->m_connections;
-}
-
-Server::operator int()
-{
-	return this->m_socket_fd;
-}
-Server &Server::operator=(const Server &other)
-{
-	if (this != &other) {
-		this->m_socket_fd = other.m_socket_fd;
-		this->m_port = other.m_port;
-		this->m_connections.clear();
-		for (auto &connection : other.m_connections)
-			this->m_connections.push_back(connection);
-		this->m_on_connect = other.m_on_connect;
+	if(this->m_lastly_used_connection == Connection::empty) {
+		EL("You cannot respond since you have not received anything");
+		throw std::runtime_error("You cannot respond since you have not received anything");
 	}
-	return *this;
+	LOG("Sending message: " << data);
+    m_lastly_used_connection << data;
 }
-Connection& Server::operator[](size_t index)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// getters
+Server::operator int() const
 {
-	if (index >= this->m_connections.size()) {
-		throw std::runtime_error("Invalid index");
-	}
-	return *this->m_connections[index];
+    return m_socket;
 }
-
-size_t Server::getAmountOfConnections()
+int Server::getPort() const
 {
-	return this->m_connections.size();
+    return this->m_port;
 }
-
-void Server::startConnectionHandling(std::function<void(Connection &)> on_connect, bool forever)
+std::vector<Connection*> Server::getConnections() const
 {
-	if (this->m_connection_handling_started.load())
-		return;
-
-	LOG("Now all incomming connections would be handled");
-	this->m_connection_handling_started.store(true);
-	this->m_server_destructing_allowed.store(false);
-	std::thread connection_handler([&] (std::function<void(Connection&)> on_connect) {
-		pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };\
-
-		if (forever)
-			ILOG("Server will be running forever\n"
-			"This means that you would need to kill the proccess yourself\n"
-			" >>> kill -9" << getpid() << "\n"
-			"or restart your machine\n\n");
-
-		while (forever || this->m_connection_handling_started.load()) {
-			const std::lock_guard<std::mutex> lock(m_connections_mutex);
-			struct sockaddr remoteaddr;
-			socklen_t addrlen = sizeof(remoteaddr);
-
-			while (poll(&data, 1, HANDLING_TIMEOUT) > 0) {
-				int new_fd = 0;
-				if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
-					EL("Failed to accept new connection\nSkipping...\n");
-					continue;
-				}
-
-				ILOG("New connection accepted " << new_fd);
-
-				std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, stoi(this->m_port));
-
-				if (on_connect != nullptr) 
-					this->m_on_connect = on_connect;
-
-				if (this->m_on_connect != nullptr) 
-					m_on_connect(*connection);
-
-				this->m_connections.push_back(std::move(connection));   
-			}
-			m_server_destructing_allowed.store(true);
-		}
-	}, on_connect);
-	connection_handler.detach();
+    return this->m_connections;
 }
-void Server::stopConnectionHandling()
+
+Server::~Server()
 {
-	LOG("Stopped new connection handling");
-	this->m_connection_handling_started.store(false);
-}
-
-void startNewConnectionHandlingThread() {
-
-}
-
-void Server::startMessageIncomeHandling(std::function<void(std::string&, Connection&)> on_recieve)
-{
-	if (this->m_message_income_handling_started.load())
-		return;
-
-	LOG("Now all incomming connections would be handled");
-	LOG("Starting threads for every existing connection");
-	
-	this->m_message_income_handling_started.store(true);
-	std::thread message_recieve_handler([&] (std::function<void(Connection&)> on_connect) {
-		pollfd data = (pollfd) { this->m_socket_fd, POLLIN, 0 };
-		while (this->m_connection_handling_started.load()) {
-			const std::lock_guard<std::mutex> lock(m_connections_mutex);
-			struct sockaddr remoteaddr;
-			socklen_t addrlen = sizeof(remoteaddr);
-
-			while (poll(&data, 1, HANDLING_TIMEOUT) > 0) {
-				int new_fd = 0;
-				if (new_fd = accept(this->m_socket_fd, (struct sockaddr*)&remoteaddr, &addrlen); new_fd == -1) {
-					EL("Failed to accept new connection");
-
-				}
-
-				ILOG("New connection accepted " << new_fd);
-
-				std::shared_ptr<Connection> connection = std::make_shared<Connection>(new_fd, stoi(this->m_port));
-
-				if (on_connect != nullptr) 
-					this->m_on_connect = on_connect;
-
-				if (this->m_on_connect != nullptr) 
-					m_on_connect(*connection);
-
-				this->m_connections.push_back(std::move(connection));   
-			}
-			m_server_destructing_allowed.store(true);
-		}
-	}, on_recieve);
-	connection_handler.detach();
+	this->stopMessageIncomeHandling();
+	this->stopConnectionHandling();
+	this->stopEventHandler();
 }

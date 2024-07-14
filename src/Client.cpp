@@ -20,7 +20,7 @@ Client::operator int() const
 
 //now important functions
 
-Connection& Client::connectTo(const char* host, const char* port) {
+Connection& Client::connectTo(const char* host, int port) {
     struct addrinfo hints;
     struct addrinfo* res;
     memset(&hints, 0, sizeof(hints));
@@ -32,7 +32,7 @@ Connection& Client::connectTo(const char* host, const char* port) {
     LOG("Attempting to connect to " << host << ":" << port);
     LOG("Getting information");
 
-    if (int status = getaddrinfo(host, port, &hints, &res); status != 0) {
+    if (int status = getaddrinfo(host, std::to_string(port).c_str(), &hints, &res); status != 0) {
         freeaddrinfo(res);
         throw std::runtime_error("Getaddrinfo error: " + std::string(gai_strerror(status)));
     }
@@ -53,7 +53,7 @@ Connection& Client::connectTo(const char* host, const char* port) {
 
     LOG("Configuring connection...");
 
-    Connection connection = Connection(std::move(socket_fd), atoi(port));
+    Connection connection = Connection(std::move(socket_fd));
     m_connection = std::move(connection);
     freeaddrinfo(res);
     return m_connection;
