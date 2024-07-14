@@ -322,7 +322,17 @@ Server::~Server()
 	this->stopMessageIncomeHandling();
 	this->stopConnectionHandling();
 	this->stopEventHandler();
+
 	std::lock_guard<std::mutex> lock(this->m_connections_lock);
 	for (auto &connection : this->m_connections)
 		delete connection;
+	
+	std::lock_guard<std::mutex> lock_threads(this->m_message_income_threads_lock);
+	for (auto &thread : this->m_message_income_threads) {
+		auto thread_ptr = thread.second;
+		thread_ptr->join();
+		delete thread_ptr;
+	}
+
+	delete this->m_main_thread.load();
 }
