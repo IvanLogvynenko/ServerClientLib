@@ -139,8 +139,8 @@ Server Server::host(uint16_t port)
 	socketAddr.sin_port = htons(port);
 	socketAddr.sin_addr.s_addr = INADDR_ANY;
 
-	// int yes = 1;
-	// setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+	int yes = 1;
+	setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
 	if (!bind(socket_fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr))) {
 		EL("Bind error");
