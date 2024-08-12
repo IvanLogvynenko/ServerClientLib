@@ -1,99 +1,104 @@
 #include "Client.hpp"
 
-Client::Client() {
-    m_connection = Connection::empty;
-}
-Client::~Client() {
-    LOG("Client closed");
-}
+server_client::Client::Client(server_client::Client &other) {
+	if (this == &other)
+		return;
 
-Client &Client::operator=(const Client &other)
-{
-    if (this == &other) return *this;
-    this->m_connection = other.m_connection;
-    return *this;
+	this->connection = other.connection;
 }
-Client::operator int() const
-{
-    return this->m_connection;
+server_client::Client& server_client::Client::operator=(Client& other) {
+	if (this == &other)
+		return other;
+
+	this->connection = other.connection;
+	return *this;
 }
 
-//now important functions
+void server_client::Client::connectTo(std::string ip, std::string port) {
+	struct addrinfo hints;
+	struct addrinfo* res;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
 
-Connection& Client::connectTo(const char* host, int port) {
-    struct addrinfo hints;
-    struct addrinfo* res;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
+	if (int status = getaddrinfo(ip.c_str(), port.c_str(), &hints, &res); status != 0) {
+		freeaddrinfo(res);
+		throw std::runtime_error("Getaddrinfo error: " + std::string(gai_strerror(status)));
+	}
 
-    int socket_fd = 0;
-    
-    LOG("Attempting to connect to " << host << ":" << port);
-    LOG("Getting information");
+	int socketd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (socketd == -1) {
+		freeaddrinfo(res);
+		throw std::runtime_error("Socket error " + std::string(strerror(errno)));
+	}
 
-    if (int status = getaddrinfo(host, std::to_string(port).c_str(), &hints, &res); status != 0) {
-        freeaddrinfo(res);
-        throw std::runtime_error("Getaddrinfo error: " + std::string(gai_strerror(status)));
-    }
-    LOG("Got information. Opening socket...");
-    socket_fd = openSocket(res);
-    LOG("Socket opened. Processing to connection...");
-    int attempt = 0;
-    while (attempt++ < MAX_CONNECTION_ATTEMPTS && connect(socket_fd, res->ai_addr, res->ai_addrlen) == -1) {
-        std::cerr << "Connection failed | attempt " << attempt << std::endl;
-        close(socket_fd);
-        socket_fd = -1;
-    }
-    if (socket_fd == -1) {
-        freeaddrinfo(res);
-        throw std::runtime_error("Impossible to connect to server");
-    }
-    LOG("Connected successfully")
+	int attempt = 0;
+	while (attempt++ < MAX_CONNECTION_ATTEMPTS && connect(socketd, res->ai_addr, res->ai_addrlen) == -1)
+		std::cerr << "Connection failed | attempt " << attempt << std::endl;
+	
+	if (attempt == MAX_CONNECTION_ATTEMPTS) {
+		freeaddrinfo(res);
+		throw std::runtime_error("Impossible to connect to server");
+	}
+	
+	Connection *connection = new Connection(socketd);
+	this->connection = connection;
+	freeaddrinfo(res);
 
-    LOG("Configuring connection...");
-
-    Connection connection = Connection(std::move(socket_fd));
-    m_connection = std::move(connection);
-    freeaddrinfo(res);
-    return m_connection;
+}
+void server_client::Client::connectTo(std::string ip, uint16_t port) {
+	this->connectTo(ip, std::to_string(port));	
 }
 
-int Client::openSocket(struct addrinfo* res)
-{   
-    LOG("Attempting to open socket");
-    int socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (socket_fd == -1) {
-        freeaddrinfo(res);
-        throw std::runtime_error("Socket error " + std::string(strerror(errno)));
-    }
-    LOG("Openned successfully");
-    LOG("Socket fd is " << socket_fd);
-    return socket_fd;
+void server_client::Client::disconnect() {
+	if (this->connection)
+	    this->sendMessage(Connection::CLOSE_MESSAGE);
+	delete this->connection;
+	this->connection = nullptr;
 }
 
-void Client::disconnect()
-{
-    LOG("Disconnecting..");
-    this->m_connection = Connection();
-    LOG("Disconnected");
+
+
+void server_client::Client::sendMessage(std::string data) {
+	if (!this->connection)
+		std::cerr << "Cannot send message: No active connection" << std::endl;
+	
+	ssize_t sent = send(*this, data.c_str(), data.length(), 0);
+	
+	if (sent == -1) {
+		throw std::runtime_error("Message sending error");
+	}
+	else if (sent == 0)
+		delete this->connection;
+}
+void server_client::Client::sendMessage(const char * data) {
+	this->sendMessage(std::string(data));
 }
 
-bool Client::checkIfConnected() const 
-{
-    return this->m_connection.checkValidity();
+std::string server_client::Client::recieve() {
+	std::array<char, BUFFER_SIZE> buffer;
+	ssize_t data_size = 0;
+
+	data_size = recv(*this, buffer.data(), BUFFER_SIZE, 0); 
+
+	if (data_size < 0) 
+		throw std::runtime_error("Failed to recieve data");
+	else if (data_size == 0) 
+		throw server_client::ConnectionClosedException();
+
+	std::string result(buffer.data(), (size_t)data_size);
+
+    if (result == Connection::SERVER_STOP) {
+		delete this->connection;
+		return "";
+	}
+
+	return result;
 }
 
-void Client::sendMessage(const char* data) const
-{
-    this->sendMessage((std::string)data);
-}
-void Client::sendMessage(std::string data) const
-{
-    m_connection << data;
-}
 
-std::string Client::recieveMessage() const
-{
-    return this->m_connection.recieve();
+
+server_client::Client::~Client() {
+	if (this->connection)
+		delete this->connection;
 }

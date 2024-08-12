@@ -1,47 +1,58 @@
-#pragma once
+#ifndef CONNECTION_HPP
+#define CONNECTION_HPP
 
 #include <cstdint>
 
+#include <stdexcept>
+
 #include <array>
-
 #include <string>
+#include <sstream>
 
-#include <sys/socket.h>
-#include <netdb.h>
 #include <unistd.h>
-
-#include "basic.hpp"
-
-#ifndef BUFFER_SIZE
-    #define BUFFER_SIZE 100
-#endif // !BUFFER_SIZE
-
-class Connection
+#include <sys/socket.h>
+	
+namespace server_client
 {
-private:
-    static uint8_t id;
-protected:
-    uint8_t ID;
-    int m_socket_fd;
-    bool m_isEmpty;
+	class Connection {
+		private:
+			static unsigned int ID;
+		protected:
+			int sd;
+			unsigned int id;
 
-public:
-    Connection(int = -1);
-    ~Connection();
+			std::string backlog;
+		public:
+			Connection(int sd);
+			Connection(const Connection&);
+			~Connection();
+			Connection& operator=(const Connection&);
 
-    const static Connection empty;
 
-    bool isEmpty() const;
-    bool checkValidity() const;
 
-    u_int8_t getID() const;
+			inline unsigned int getId() const { return this->id; }
+			inline int getSocket() const { return this->sd; }
+			inline operator int() const { return this->sd; }
+			inline bool isValid() const { return this->sd != -1 && this->sd != 0; }
 
-    operator int() const;
+			const static std::string CLOSE_MESSAGE;
+			const static std::string SERVER_STOP;
+	};
 
-    std::string recieve() const;
+	class ConnectionHashFunction {
+	public:
+		size_t operator() (const server_client::Connection& connection) const {
+			return std::hash<int>{}(connection.getSocket());
+		}
+	};
 
-    const Connection& operator<<(std::string&) const;
-    const Connection& operator>>(std::string&) const;
 
-    Connection& operator=(const Connection&);
-};
+	class ConnectionClosedException : public std::exception {
+	public:
+		ConnectionClosedException() {}
+		virtual const char* what() const noexcept override { return ""; }
+	};
+
+} // namespace server_client
+
+#endif //!CONNECTION_HPP

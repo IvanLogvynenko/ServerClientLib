@@ -1,123 +1,100 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef SERVER
+#define SERVER
+
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 1000
+#endif //!BUFFER_SIZE
 
 #ifndef LISTEN_BACKLOG
-	#define LISTEN_BACKLOG 20
-#endif // !LISTEN_BACKLOG
+#define LISTEN_BACKLOG 50
+#endif //!LISTEN_BACKLOG
 
 #ifndef DEFAULT_PORT
-	#define DEFAULT_PORT 37373
-#endif // !DEFAULT_PORT
+#define DEFAULT_PORT 30000
+#endif //!DEFAULT_PORT
 
-#ifndef HANDLING_TIMEOUT
-	#define HANDLING_TIMEOUT 500
-#endif // !HANDLING_TIMEOUT
+#ifndef CONNECTION_TIMEOUT
+#define CONNECTION_TIMEOUT 15000
+#endif //!CONNECTION_TIMEOUT
 
-//data structure for storing client information
-#include <vector>
+#ifndef MESSAGE_INCOME_TIMEOUT
+#define MESSAGE_INCOME_TIMEOUT 10000
+#endif //!MESSAGE_INCOME_TIMEOUT
+
+#include <iostream>
+
 #include <string>
+#include <vector>
+#include <cstddef>
 #include <algorithm>
-
-//network related includes
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <poll.h>
-
-//asyncrounous related includes
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
-
-//allowing callbacks
 #include <functional>
 #include <unordered_map>
 
-//enabling logging
-#include "basic.hpp"
+#include <poll.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
-//class for managing client connections
+#include <thread>
+#include <mutex>
+#include <atomic>
+
 #include "Connection.hpp"
 
-class Server
+namespace server_client
 {
-private:
-	int m_socket, m_port;
-	Connection m_lastly_used_connection; // used to provide respond method
+	class Server {
+		protected:
+			int socketd, port;
+			Connection* last_used_connection;
+			
+			std::mutex connections_lock;
+			std::vector<Connection*> connections;
 
-	std::mutex m_connections_lock;
-	std::vector<Connection*> m_connections;
+			std::atomic_bool connection_handler_stop_trigger = true;
+			std::atomic<std::thread*> connection_handler;
 
+			std::mutex message_handlers_lock;
+			std::atomic_bool message_handler_stop_trigger = true;
+			std::function<void(std::string&, Connection*)> on_recieve;
+			std::unordered_map<Connection, std::thread*, ConnectionHashFunction> income_message_handlers;
 
+			Server(int, int);
+		public:
+			Server& operator=(Server&);
+			~Server();
 
-	std::atomic_bool m_handle_connection;
-	std::function<Connection* (Connection*)> m_on_connect = nullptr;
+			static Server* host(uint16_t = DEFAULT_PORT);
 
-	std::atomic_bool m_handle_message_income;
-	std::function<void(std::string&, Connection*)> m_on_recieve = nullptr;
-	
+			// * I/O methods
+			void sendMessage(const char *, Connection*);
+			void sendMessage(std::string, Connection*);
 
+			void respond(const char*);
+			void respond(std::string);
 
-	std::atomic_bool m_thread_stop, m_message_hangling_stop;
+			std::string awaitNewMessage(Connection*);
 
-	std::mutex m_main_thread_mutex;
-	std::condition_variable m_main_thread_lock;
+			//* Server actions
+			std::thread* startMessageIncomeHandlingThread(Connection*, std::function<void(std::string&, Connection*)> = nullptr);
+			void awaitNewConnection(std::function<Connection*(Connection*)> = nullptr);
 
-	std::atomic<std::thread*> m_main_thread;
+            void removeSocket(Connection*);
 
-	std::mutex m_message_income_threads_lock;
-	std::unordered_map<int, std::thread*> m_message_income_threads;
-protected:
-	/**
-	 * methods to control "central" thread that manages threads 
-	 * for both incoming connections and messages
-	 */
-	std::thread* startNewMessageIncomeThread(Connection* connection);
+			//* Thread management
+			void startConnectionHandling(std::function<Connection*(Connection*)> = nullptr);
+			void stopConnectionHandling();
 
-	void startEventHandler();
-	void stopEventHandler();
+			void startMessageIncomeHandling(std::function<void(std::string&, Connection*)> = nullptr);
+			void stopMessageIncomeHandling();
 
-public:
-	Server();
-	Server(Server&);
-	Server& operator=(Server& other);
+			//* geters
+			inline operator int() const { return socketd; }
+			inline int getPort() const { return port; }
+			inline std::vector<Connection*> getConnections() const { return connections; }
+	};
+} // namespace server_client
 
-	~Server();
+#endif // !SERVER
 
-	//* configuration interface
-	static Server host(uint16_t port = DEFAULT_PORT);
-
-	Connection* awaitNewConnection(std::function<Connection*(Connection*)> = nullptr);
-	std::string awaitNewMessage(Connection*, 
-							std::function<void(std::string&, Connection*)> = nullptr);
-
-	void startConnectionHandling(
-		std::function<Connection* (Connection*)> = nullptr
-	);
-	void stopConnectionHandling();
-
-	void startMessageIncomeHandling(
-		std::function<void(std::string&, Connection*)> = nullptr
-	);
-	void stopMessageIncomeHandling();
-
-	//* I/O interface
-	void sendMessage(const char* = "", size_t = 0) const;
-	void sendMessage(std::string = "", size_t = 0) const;
-	void sendMessage(std::string, const Connection& connection) const;
-
-	std::string recieveMessageFrom(size_t = 0);
-	std::string recieveMessageFrom(const Connection&);
-
-	void respond(const char* = "") const;
-	void respond(std::string = "") const;
-
-	//* getters
-	operator int() const;
-	int getPort() const;
-	std::vector<Connection*> getConnections() const;
-};
-
-#endif // !SERVER_HPP
 

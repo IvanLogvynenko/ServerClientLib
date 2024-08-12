@@ -1,51 +1,52 @@
-#pragma once
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
+
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 1000
+#endif // !BUFFER_SIZE
+
+#ifndef MAX_CONNECTION_ATTEMPTS
+#define MAX_CONNECTION_ATTEMPTS 50
+#endif // !MAX_CONNECTION_ATTEMPTS
+
+#ifndef DEFAULT_PORT
+#define DEFAULT_PORT 30000
+#endif // !DEFAULT_PORT
+
+#include <iostream>
+
 #include <string>
-#include <string.h>
-#include <memory>
+#include <cstddef>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <netdb.h>
-#include <arpa/inet.h>
-
-#include "basic.hpp"
+#include <memory.h>
+#include <sys/socket.h>
 
 #include "Connection.hpp"
 
-#ifndef BUFFER_SIZE
-    #define BUFFER_SIZE 100
-#endif // !BUFFER_SIZE
+namespace server_client {
+	class Client {
+		protected: Connection* connection;
+		public:
+			Client() {}
+			Client(Client&);
+			Client& operator=(Client&);
+			~Client();
 
-#ifndef DEFAULT_PORT
-    #define DEFAULT_PORT "37373"
-#endif // !DEFAULT_PORT
+			// I/O
+			void sendMessage(const char *);
+			void sendMessage(std::string);
 
-#ifndef MAX_CONNECTION_ATTEMPTS
-    #define MAX_CONNECTION_ATTEMPTS 50
-#endif // !MAX_CONNECTION_ATTEMPTS
+			std::string recieve();
 
-class Client
-{
-private:
-    static int openSocket(struct addrinfo* res);
-    
-protected:
-    Connection m_connection;
+			// net controll
+			void connectTo(std::string, std::string);
+			void connectTo(std::string, uint16_t = DEFAULT_PORT);
+			
+			void disconnect();
+			
+			inline operator int() { return *connection; }
+	};
+}
 
-public:
-    Client();
-    ~Client();
-
-    Connection& connectTo(const char* = "127.0.0.1", int = DEFAULT_PORT);
-
-    void disconnect();
-    bool checkIfConnected() const;
-
-    void sendMessage(const char*) const;
-    void sendMessage(std::string) const;
-
-    std::string recieveMessage() const;
-
-    operator int() const;
-    Client& operator=(const Client& other);
-};
+#endif // !CLIENT_HPP

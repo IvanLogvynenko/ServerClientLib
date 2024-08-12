@@ -3,39 +3,18 @@ It is a basic **Server-Client library**, instances of which you might find on th
     Your's WR.
 
 # Requirements
- - Any **linux distro** since I'm using linux sockets and not windows sockets here, because... Windows sucks(IMHO). I personaly
- recommend using [Fedora Workstation](https://fedoraproject.org/workstation/).
+ - Any **linux distro** since I'm using linux sockets and not windows sockets here, because... Windows sucks(IMHO).
 
- - CMake/Make
-
-    - Red Hat based: 
-    ``` bash
-    sudo dnf install cmake make
-    ```
-
-    - AArch based:
-    ``` bash
-    sudo pacman install cmake make
-    ```
-
-    - Debian based:  
-    ``` bash
-    sudo apt install cmake make
-    ```
-
+ - CMake
+ - Make
  - g++ (c++*11* or higher)
-    Red Hat based: 
-    ``` bash
-    sudo dnf install gcc-c++
-    ```
-
  - Brains (Preferably yours)
     Well you need to be born with them
 
 # First Launch
-If you have just cloned the repo, you won't have any binaries and staff. I've created a file `scripts/launch.sh`. 
-``` bash
-cd scripts
-launch.sh
+If you have just cloned the repo, you won't have any binaries and staff. You can build them with cmake
+``` cmake
+cmake -S . -B build &
+cmake --build build
 ```
-By running this file the project would be built. If you get some problems it is your problems. On my pc everything works.
+If you get some problems it is your problems. On my PC everything works.
