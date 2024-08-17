@@ -24,6 +24,8 @@
 
 #include "Connection.hpp"
 
+#include "Logger.hpp"
+
 namespace server_client {
 	class Client {
 		protected: Connection* connection;

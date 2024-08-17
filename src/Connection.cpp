@@ -27,5 +27,7 @@ Connection& Connection::operator=(const Connection& other) {
 
 
 server_client::Connection::~Connection() {
+	Logger logger("Connection::~Connection()");
+	logger << Logger::important << "Closing connection with ID: " << this->id << std::endl;
 	close(this->sd);
 }

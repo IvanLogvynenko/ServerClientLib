@@ -13,6 +13,5 @@ add_library(ServerClientLib
     src/Client.cpp
     src/Connection.cpp
 )
-target_compile_definitions(ServerClientLib PUBLIC EXECUTABLE_NAME="ServerClientLib")
 target_link_libraries(ServerClientLib PUBLIC debugKit)
 target_include_directories(ServerClientLib PUBLIC include)

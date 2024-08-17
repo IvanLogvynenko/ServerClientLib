@@ -11,6 +11,8 @@
 
 #include <unistd.h>
 #include <sys/socket.h>
+
+#include "Logger.hpp"
 	
 namespace server_client
 {
