@@ -252,6 +252,10 @@ void server_client::Server::startConnectionHandling(std::function<Connection*(Co
 			if (poll_res == -1)
 				throw std::runtime_error("Poll error");
 			else if (poll_res == 0) {
+				if (this->getConnections().size() == 0) {
+					logger << "No connections, stoppping..." << std::endl;
+					break;
+				}
 				if (!this->message_handler_stop_trigger) {
 					logger << Logger::warning << "No new connection, mesage handling thread is running, continuing..." << std::endl;
 				    continue;
