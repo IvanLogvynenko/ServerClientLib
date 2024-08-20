@@ -1,12 +1,11 @@
 #include "Server.hpp"
-using namespace server_client;
 
 Server::Server(int sd, int port) : 
 	socketd(sd), 
 	port(port) {}
-server_client::Server &server_client::Server::operator=(Server &other) {
+Server &Server::operator=(Server &other) {
 	if (this != &other) 
-		return other;
+		return *this;
 
 	if (connections.size() > 0) 
 		throw std::runtime_error("Cannot copy server with active connections\n"
@@ -56,7 +55,7 @@ void listen_socket(int socket_fd) {
 	logger << "Server socket listening successfully" << std::endl;
 }
 //* host? *//
-server_client::Server* Server::host(uint16_t port) {
+Server* Server::host(uint16_t port) {
 	Logger logger("Server::host");
 	int socket = open_socket();
 	bind_socket(socket, port);
@@ -69,115 +68,80 @@ server_client::Server* Server::host(uint16_t port) {
 
 
 
-std::string recieve(Connection *conn) {
-	Logger logger("Server::recieve");
-	std::array<char, BUFFER_SIZE> buffer;
-	ssize_t data_size = 0;
-
-	logger << Logger::info << "Awaiting data" << std::endl;
-	data_size = recv(*conn, buffer.data(), BUFFER_SIZE, 0); 
-
-	if (data_size < 0) 
-		throw std::runtime_error("Failed to recieve data");
-	else if (data_size == 0) { 
-		logger << Logger::error << "Connection closed by client" << std::endl;
-		throw server_client::ConnectionClosedException();
-	}
-
-	std::string result(buffer.data(), (size_t)data_size);
-	logger << Logger::debug << "Received data: " << result << std::endl;
-
-    if (result == Connection::CLOSE_MESSAGE) {
-		logger << "Recieved close message, closing connection" << std::endl;
-		throw server_client::ConnectionClosedException();
-	}
-
-	return result;
-}
-
-void server_client::Server::sendMessage(const char *data, Connection* conn) {
+void Server::sendMessage(const char *data, Connection* conn) {
 	this->sendMessage(std::string(data), conn);
 }
-void server_client::Server::sendMessage(std::string data, Connection* conn) {
+void Server::sendMessage(std::string data, Connection* conn) {
 	Logger logger("Server::sendMessage");
-	ssize_t sent = send(*conn, data.c_str(), data.length(), 0);
-	logger << Logger::debug << "Sent data: " << data << "(" << data.length() << "bytes)" << std::endl;
 	
-	if (sent == -1) {
-		logger << Logger::critical << "Failed to send data";
-		throw std::runtime_error("Message sending error");
-	}
-	else if (sent == 0) {
-		logger << Logger::debug << "Connection closed by client" << std::endl;
-		removeSocket(conn);
+	try {
+		logger << "Sending message: " << data << std::endl;
+		conn->sendMessage(data);
+	} catch (ConnectionClosedException& e) {
+		logger << Logger::error << "Connection was closed" << std::endl;
+
+		removeConnection(conn);
 	}
 }
 
-void server_client::Server::respond(const char *data) {
+void Server::respond(const char *data) {
 	respond(std::string(data));
 }
-void server_client::Server::respond(std::string data) {
+void Server::respond(std::string data) {
 	if (last_used_connection)
 		sendMessage(data, last_used_connection);
 	else throw std::runtime_error("No active connection to respond to");
 }
 
-std::string server_client::Server::awaitNewMessage(Connection* conn) {
+std::string Server::recieve(Connection* conn) {
 	Logger logger("Server::awaitNewMessage");
-	pollfd poll_data = {*conn, POLLIN, 0 };
-	logger << Logger::important << "Awaiting new message" << std::endl;
-	logger << Logger::debug << "Timeout: " << MESSAGE_INCOME_TIMEOUT << "ms" << std::endl;
-	int poll_res = poll(&poll_data, 1, MESSAGE_INCOME_TIMEOUT);
-
-	if (poll_res == -1) {
-		logger << Logger::critical << "Failed to poll socket" << std::endl;
-        throw std::runtime_error("Poll error");
-    } else if (poll_res == 0) {
-		logger << Logger::warning << "No new message received within timeout, removin connection" << std::endl;
-		removeSocket(conn);
-		return "";
-	}
-
-	this->last_used_connection = conn;
+	
 	try {
-		return recieve(conn);
-	}
-	catch (server_client::ConnectionClosedException &e) {
-		removeSocket(conn);
-		return "";
-	}
+		logger << "Awaiting new message for connection " << *this << std::endl;
 
-}
+		auto result = conn->awaitNewMessage();
 
-
-
-std::thread *server_client::Server::startMessageIncomeHandlingThread(
-		Connection *conn, std::function<void(std::string &, Connection *)> on_recieve) {
-	Logger logger("Server::startMessageIncomeHandlingThread");
-	logger << Logger::important << "Starting message income handling thread for connection " << *conn << std::endl;
-
-	return std::move(new std::thread([this, conn, on_recieve]() {
-		Logger logger("Server.messageHandlingThread");
-		logger << Logger::debug << "Message income handling thread started for connection " << *conn <<  std::endl;
-
-		while (!this->message_handler_stop_trigger) {
-			if (this->income_message_handlers.find(*conn) == this->income_message_handlers.end())
-			    break;
-
-			std::string message = this->awaitNewMessage(conn);
-			if (message.empty())
-				break;
-			if (on_recieve)
-				on_recieve(message, conn);
+		if (result == Connection::CLOSE_MESSAGE) {
+			logger << "Recieved close message, closing connection" << std::endl;
+			throw ConnectionClosedException();
 		}
 
-		logger << Logger::debug << "Message income handling thread for connection " << *conn << " stopped" << std::endl;
-	}));
+		return result;
+	}
+	catch (ConnectionClosedException& e) {
+		removeConnection(conn);
+		throw e;
+	}    
 }
 
 
 
-void server_client::Server::awaitNewConnection(std::function<Connection*(Connection*)> on_connect) {
+void Server::startMessageIncomeHandlingThread(Connection *conn, std::function<void(const std::string &, const Connection *)> on_recieve) {
+	std::thread thread([this, on_recieve, conn]() {
+		Logger logger("Connection.messageHandlingThread");
+		logger << Logger::debug << "Message income handling thread started for connection " << *conn <<  std::endl;
+		while (this->start_message_income_handling_on_connect) {
+			try {
+				std::string message = this->recieve(conn);
+				if (on_recieve)
+					on_recieve(message, conn);
+			} catch (ConnectionClosedException& e) {
+				logger << Logger::error << "Connection was closed, stopping message income handler" << std::endl;
+				break;
+			}
+		}
+		logger << Logger::debug << "Message income handling thread for connection " << *conn << " stopped" << std::endl;
+	});
+    thread.detach();
+	// Detaching since there is a problem of joining thread
+	// The thread is guaranteed to break without causing errors because recieve() will throw ConnectionCLosedException
+	// if you know how to fix, do it!
+	// Hours of trying to fix: 25h
+}
+
+
+
+void Server::awaitNewConnection(std::function<void(const Connection*)> on_connect) {
 	Logger logger("Server::awaitNewConnection");
 	pollfd poll_data = { *this, POLLIN, 0 };
 	logger << Logger::important << "Awaiting new connection" << std::endl;
@@ -200,45 +164,41 @@ void server_client::Server::awaitNewConnection(std::function<Connection*(Connect
 	
 	Connection* conn = new Connection(new_sd);
 	if (on_connect)
-		conn = on_connect(conn);
+		on_connect(conn);
 
-	if (conn && conn->isValid()) {
-		std::lock_guard<std::mutex> lock(connections_lock);
-		connections.push_back(std::move(conn));
-		if (!this->message_handler_stop_trigger) {
-			std::lock_guard<std::mutex> other_lock(message_handlers_lock);
-			income_message_handlers[*conn] = this->startMessageIncomeHandlingThread(conn, this->on_recieve);
-			logger << "Connection added to message handlers" << std::endl;
-		}
-	}
+	std::lock_guard<std::mutex> lock(connections_lock);
+	connections.push_back(std::move(conn));
+	
+	if (this->start_message_income_handling_on_connect)
+		this->startMessageIncomeHandlingThread(conn, this->on_recieve);
 }
 
-void server_client::Server::removeSocket(Connection *conn) {
+void Server::removeConnection(Connection *conn) {
+	Logger logger("Server::removeSocket");
 	if (this->last_used_connection == conn)
 		this->last_used_connection = nullptr;
 
+	logger << Logger::debug << "Removing connection " << *conn << std::endl;
 	for (size_t i = 0; i < connections.size(); ++i) {
 		if (connections[i]->getId() == conn->getId()) {
+			logger << Logger::debug << "Connection removed from message handlers" << std::endl;
 			std::lock_guard<std::mutex> lock(connections_lock);
 			connections.erase(connections.begin() + i);
+			break;
 		}
 	}
-	std::lock_guard<std::mutex> other_lock(message_handlers_lock);
-	income_message_handlers[*conn]->detach();
-	income_message_handlers.erase(*conn);
 
 	delete conn;
 }
 
 
 
-void server_client::Server::startConnectionHandling(std::function<Connection*(Connection*)> on_connect) {
+void Server::startConnectionHandling(std::function<void(const Connection*)> on_connect) {
 	Logger logger("Server::startConnectionHandling");
 	if (!this->connection_handler_stop_trigger)
 	    return;
 	logger << Logger::important << "Starting connection handling thread" << std::endl;
-	this->connection_handler = std::move(
-		new std::thread([&](std::function<Connection*(Connection*)> on_connect) {
+	this->connection_handler = new std::thread([this, on_connect]() {
 		Logger logger("Server.connectionHandlingThread");
 
 		logger << Logger::debug << "Connection handling thread started" << std::endl;
@@ -256,7 +216,7 @@ void server_client::Server::startConnectionHandling(std::function<Connection*(Co
 					logger << "No connections, stoppping..." << std::endl;
 					break;
 				}
-				if (!this->message_handler_stop_trigger) {
+				if (this->start_message_income_handling_on_connect) {
 					logger << Logger::warning << "No new connection, mesage handling thread is running, continuing..." << std::endl;
 				    continue;
 				}
@@ -273,64 +233,61 @@ void server_client::Server::startConnectionHandling(std::function<Connection*(Co
 			
 			Connection* conn = new Connection(new_sd);
 			if (on_connect)
-				conn = on_connect(conn);
+				on_connect(conn);
 
-			if (conn && conn->isValid()) {
-				std::lock_guard<std::mutex> lock(connections_lock);
-				connections.push_back(conn);
-				if (!this->message_handler_stop_trigger) {
-					std::lock_guard<std::mutex> other_lock(message_handlers_lock);
-					income_message_handlers[*conn] = this->startMessageIncomeHandlingThread(conn, this->on_recieve);
-					logger << "Connection added to message handlers" << std::endl;
-				}
+			{std::lock_guard<std::mutex> lock(connections_lock);
+			connections.push_back(conn);}
+
+			logger << Logger::debug << "Adding connection to message handlers, should start=" << this->start_message_income_handling_on_connect << std::endl;
+			if (this->start_message_income_handling_on_connect) {
+				this->startMessageIncomeHandlingThread(conn, this->on_recieve);
+				logger << Logger::debug << "Connection started message handling" << std::endl;
 			}
 		}
 		logger << Logger::debug << "Connection handling thread stopped" << std::endl;
-	}, std::move(on_connect)));
+	});
 }
-void server_client::Server::stopConnectionHandling() {
+void Server::stopConnectionHandling() {
 	this->connection_handler_stop_trigger = true;
-    if (this->connection_handler.load())
+    if (this->connection_handler.load()) {
         this->connection_handler.load()->join();
+		delete this->connection_handler;
+	}
 }
 
 
 
-void server_client::Server::startMessageIncomeHandling(std::function<void(std::string &, Connection *)> on_recieve) {
-	if (!this->message_handler_stop_trigger)
+void Server::startMessageIncomeHandling(std::function<void(const std::string &, const Connection*)> on_recieve) {
+	if (this->start_message_income_handling_on_connect)
 	    return;
+
 	Logger logger("Server::startMessageIncomeHandling");
-	this->on_recieve = std::move(on_recieve);
-	this->message_handler_stop_trigger = false;
-
 	logger << Logger::important << "Starting message income handling threads" << std::endl;
+
+	this->start_message_income_handling_on_connect = true;
+
+	logger << Logger::debug << "Message income handling threads started" << (on_recieve ? " with callback" : "") << std::endl;
+
+	this->on_recieve = std::move(on_recieve);
+
+	std::lock_guard<std::mutex> lock(connections_lock);
+	for (auto &conn: this->getConnections())
+		this->startMessageIncomeHandlingThread(conn, this->on_recieve);
+}
+void Server::stopMessageIncomeHandling() {
+	if (!this->start_message_income_handling_on_connect)
+		return;
 	
-	std::lock_guard<std::mutex> lock(message_handlers_lock);
-	for (auto connection : this->getConnections()) 
-		income_message_handlers[*connection] = this->startMessageIncomeHandlingThread(connection, this->on_recieve);
-}
-void server_client::Server::stopMessageIncomeHandling() {
-	this->message_handler_stop_trigger = true;
-	for (auto &[_, handler] : income_message_handlers) {
-        handler->join();
-        delete handler;
-    }
+	this->start_message_income_handling_on_connect = false;
 }
 
 
 
-server_client::Server::~Server() {
+Server::~Server() {
 	if (this->connection_handler.load()) {
 		connection_handler.load()->join();
 		delete this->connection_handler;
 	}
-
-    std::lock_guard<std::mutex> handlers_lock(message_handlers_lock);
-	if (this->income_message_handlers.size())
-		for (auto &[_, handler] : income_message_handlers) {
-			handler->join();
-            delete handler;
-		}
 
 	std::lock_guard<std::mutex> lock(connections_lock);
 	for (auto &conn : connections) {

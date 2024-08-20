@@ -1,60 +1,55 @@
 #ifndef CONNECTION_HPP
 #define CONNECTION_HPP
 
-#include <cstdint>
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 1000
+#endif // !BUFFER_SIZE
+
+#ifndef MESSAGE_INCOME_TIMEOUT
+#define MESSAGE_INCOME_TIMEOUT 10000
+#endif //!MESSAGE_INCOME_TIMEOUT
 
 #include <stdexcept>
 
 #include <array>
 #include <string>
-#include <sstream>
+#include <memory>
 
-#include <unistd.h>
-#include <sys/socket.h>
-
-#include "Logger.hpp"
+#include <atomic>
+#include <thread>
+#include <functional>
 	
-namespace server_client
-{
-	class Connection {
-		private:
-			static unsigned int ID;
-		protected:
-			int sd;
-			unsigned int id;
+class Connection {
+	private:
+		static unsigned int ID;
+	protected:
+		int sd;
+		unsigned int id;
 
-			std::string backlog;
-		public:
-			Connection(int sd);
-			Connection(const Connection&);
-			~Connection();
-			Connection& operator=(const Connection&);
-
-
-
-			inline unsigned int getId() const { return this->id; }
-			inline int getSocket() const { return this->sd; }
-			inline operator int() const { return this->sd; }
-			inline bool isValid() const { return this->sd != -1 && this->sd != 0; }
-
-			const static std::string CLOSE_MESSAGE;
-			const static std::string SERVER_STOP;
-	};
-
-	class ConnectionHashFunction {
+		std::string recieve() const;
 	public:
-		size_t operator() (const server_client::Connection& connection) const {
-			return std::hash<int>{}(connection.getSocket());
-		}
-	};
+		Connection(int sd);
+		Connection(const Connection&) = delete;
+		~Connection();
+		Connection& operator=(const Connection&) = delete;
 
+		std::string awaitNewMessage() const;
 
-	class ConnectionClosedException : public std::exception {
-	public:
-		ConnectionClosedException() {}
-		virtual const char* what() const noexcept override { return ""; }
-	};
+		void sendMessage(const std::string& message) const;
 
-} // namespace server_client
+		inline unsigned int getId() const { return this->id; }
+		inline int getSocket() const { return this->sd; }
+		inline operator int() const { return this->sd; }
+		inline bool isValid() const { return this->sd != -1 && this->sd != 0; }
+
+		const static std::string CLOSE_MESSAGE;
+		const static std::string SERVER_STOP;
+};
+
+class ConnectionClosedException : public std::exception {
+public:
+	ConnectionClosedException() {}
+	virtual const char* what() const noexcept override { return "Connection is closed"; }
+};
 
 #endif //!CONNECTION_HPP

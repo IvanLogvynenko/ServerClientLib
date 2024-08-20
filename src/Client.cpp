@@ -1,12 +1,12 @@
 #include "Client.hpp"
 
-server_client::Client::Client(server_client::Client &other) {
+Client::Client(Client &other) {
 	if (this == &other)
 		return;
 
 	this->connection = other.connection;
 }
-server_client::Client& server_client::Client::operator=(Client& other) {
+Client& Client::operator=(Client& other) {
 	if (this == &other)
 		return other;
 
@@ -14,7 +14,7 @@ server_client::Client& server_client::Client::operator=(Client& other) {
 	return *this;
 }
 
-void server_client::Client::connectTo(std::string ip, std::string port) {
+void Client::connectTo(std::string ip, std::string port) {
 	Logger logger("Client::connectTo");
 	logger << Logger::important << "Connecting to " << ip << ":" << port << std::endl;
 	struct addrinfo hints;
@@ -53,79 +53,55 @@ void server_client::Client::connectTo(std::string ip, std::string port) {
 	freeaddrinfo(res);
 
 }
-void server_client::Client::connectTo(std::string ip, uint16_t port) {
+void Client::connectTo(std::string ip, uint16_t port) {
 	this->connectTo(ip, std::to_string(port));	
 }
 
-void server_client::Client::disconnect() {
-	Logger logger("Client::disconnect");
-	if (this->connection)
-	    this->sendMessage(Connection::CLOSE_MESSAGE);
-
-	logger << Logger::important << "Disconnected from server" << std::endl;
-    if (this->connection)
-        close(*this);
-
-    delete this->connection;
-    this->connection = nullptr;
+void Client::disconnect() {
+    if (this->connection) { 
+		this->sendMessage(Connection::CLOSE_MESSAGE);
+		
+    	delete this->connection;
+    	this->connection = nullptr;
+	}
+	Logger("Client::disconnect") << Logger::important << "Disconnected from server" << std::endl;
 }
 
 
 
-void server_client::Client::sendMessage(std::string data) {
+void Client::sendMessage(std::string data) {
 	Logger logger("Client::sendMessage");
 	if (!this->connection)
 		logger << Logger::critical << "Cannot send message: No active connection" << std::endl;
-	
-	ssize_t sent = send(*this, data.c_str(), data.length(), 0);
-	
-	if (sent == -1) {
-		logger << Logger::critical << "Failed to send message" << std::endl;
-		throw std::runtime_error("Message sending error");
-	}
-	else if (sent == 0) {
-		logger << Logger::warning << "Connection closed by server" << std::endl;
+		
+	try {
+		this->connection->sendMessage(data);
+	} catch (ConnectionClosedException& e) {
+		logger << Logger::error << "Connection was closed" << std::endl;
+
 		delete this->connection;
 		this->connection = nullptr;
 	}
 }
-void server_client::Client::sendMessage(const char * data) {
+void Client::sendMessage(const char * data) {
 	this->sendMessage(std::string(data));
 }
 
-std::string server_client::Client::recieve() {
-	Logger logger("Client::recieve");
-	std::array<char, BUFFER_SIZE> buffer;
-	ssize_t data_size = 0;
+std::string Client::recieve() {
+	try {
+		return this->connection->awaitNewMessage();
+	} catch (ConnectionClosedException& e) {
+		Logger("Client::recieve") << Logger::error << "Connection was closed" << std::endl;
 
-	data_size = recv(*this, buffer.data(), BUFFER_SIZE, 0); 
-	logger << Logger::debug << "Received " << data_size << " bytes" << std::endl;
-
-	if (data_size < 0) {
-		logger << Logger::critical << "Failed to receive data" << std::endl;
-		throw std::runtime_error("Failed to recieve data");
-	}
-	else if (data_size == 0) {
-		logger << Logger::warning << "Connection closed by server" << std::endl;
-		throw server_client::ConnectionClosedException();
-	}
-
-	std::string result(buffer.data(), (size_t)data_size);
-	logger << Logger::debug << "Received message: " << result << std::endl;
-
-    if (result == Connection::SERVER_STOP) {
-		logger << "Server stopped, disconnecting..." << std::endl;
 		delete this->connection;
 		this->connection = nullptr;
-		return "";
+		throw e;
 	}
-
-	return result;
 }
 
 
 
-server_client::Client::~Client() {
+Client::~Client() {
 	if (this->connection)
 		delete this->connection;
 }
