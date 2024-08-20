@@ -27,7 +27,7 @@ int open_socket() {
 
 	int yes = 1;
 	setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-	logger << "Server socket opened successfully" << std::endl;
+	logger << Logger::debug << "Server socket opened successfully" << std::endl;
 
 	return socket_fd;
 }
@@ -43,7 +43,7 @@ void bind_socket(int socket_fd, uint16_t port) {
 		close(socket_fd);
 		throw std::runtime_error("Caught error while binding");
 	}
-	logger << "Server socket bound successfully" << std::endl;
+	logger << Logger::debug << "Server socket bound successfully" << std::endl;
 }
 void listen_socket(int socket_fd) {
 	Logger logger("Server::host.listen_socket");
@@ -52,7 +52,7 @@ void listen_socket(int socket_fd) {
 		close(socket_fd);
 		throw std::runtime_error("Failed to set socket to listening state");
 	}
-	logger << "Server socket listening successfully" << std::endl;
+	logger << Logger::debug << "Server socket listening successfully" << std::endl;
 }
 //* host? *//
 Server* Server::host(uint16_t port) {
@@ -239,7 +239,7 @@ void Server::startConnectionHandling(std::function<void(const Connection*)> on_c
 			{std::lock_guard<std::mutex> lock(connections_lock);
 			connections.push_back(conn);}
 
-			logger << Logger::debug << "Adding connection to message handlers, should start=" << this->start_message_income_handling_on_connect << std::endl;
+			logger << Logger::debug << "Adding connection to message handlers" << std::endl;
 			if (this->start_message_income_handling_on_connect) {
 				this->startMessageIncomeHandlingThread(conn, this->on_recieve);
 				logger << Logger::debug << "Connection started message handling" << std::endl;
