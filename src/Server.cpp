@@ -118,8 +118,9 @@ std::string Server::recieve(Connection* conn) {
 
 void Server::startMessageIncomeHandlingThread(Connection *conn, std::function<void(const std::string &, const Connection *)> on_recieve) {
 	std::thread thread([this, on_recieve, conn]() {
+	    int connectionID = conn->getId()
 		Logger logger("Connection.messageHandlingThread");
-		logger << Logger::debug << "Message income handling thread started for connection " << *conn <<  std::endl;
+		logger << Logger::debug << "Message income handling thread started for connection " << connectionID <<  std::endl;
 		while (this->start_message_income_handling_on_connect) {
 			try {
 				std::string message = this->recieve(conn);
@@ -130,7 +131,7 @@ void Server::startMessageIncomeHandlingThread(Connection *conn, std::function<vo
 				break;
 			}
 		}
-		logger << Logger::debug << "Message income handling thread for connection " << *conn << " stopped" << std::endl;
+		logger << Logger::debug << "Message income handling thread for connection " << connectionID << " stopped" << std::endl;
 	});
     thread.detach();
 	// Detaching since there is a problem of joining thread
