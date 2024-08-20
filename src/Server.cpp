@@ -118,7 +118,7 @@ std::string Server::recieve(Connection* conn) {
 
 void Server::startMessageIncomeHandlingThread(Connection *conn, std::function<void(const std::string &, const Connection *)> on_recieve) {
 	std::thread thread([this, on_recieve, conn]() {
-	    int connectionID = conn->getId()
+	    int connectionID = conn->getId();
 		Logger logger("Connection.messageHandlingThread");
 		logger << Logger::debug << "Message income handling thread started for connection " << connectionID <<  std::endl;
 		while (this->start_message_income_handling_on_connect) {
