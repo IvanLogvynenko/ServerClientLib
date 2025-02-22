@@ -1,6 +1,6 @@
 #include "Connection.hpp"
 
-#include "Logger.hpp"
+#include "debugKit/Logger.hpp"
 
 unsigned int Connection::ID = 0;
 const std::string Connection::CLOSE_MESSAGE = "SYSTEM_MESSAGE<CONNECTION CLOSED>";

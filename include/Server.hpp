@@ -33,7 +33,7 @@
 
 #include "Connection.hpp"
 
-#include "Logger.hpp"
+#include "debugKit/Logger.hpp"
 
 class Server {
 	protected:

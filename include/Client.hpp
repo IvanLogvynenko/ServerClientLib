@@ -20,7 +20,7 @@
 
 #include "Connection.hpp"
 
-#include "Logger.hpp"
+#include "debugKit/Logger.hpp"
 
 class Client {
 	protected: Connection* connection;
